@@ -1,5 +1,3 @@
-add_requires("doctest")
-
 target("poc.item_blobs")
     set_kind("headeronly")
     set_group("tests.data")
@@ -9,3 +7,4 @@ target("poc.item_blobs")
     add_deps("poc.item")
 
     add_includedirs(".", {public = true})
+

@@ -2,10 +2,10 @@
 
 #include <charconv>
 
-#include <poc.core/algorithm.hpp>
-#include <poc.core/log.hpp>
-#include <poc.item/item.hpp>
-#include <poc.item/item_line_index.hpp>
+#include <poc/algorithm.hpp>
+#include <poc/item.hpp>
+#include <poc/item/log.hpp>
+#include <poc/item_line_index.hpp>
 
 #if defined(__clang__) && __has_attribute(musttail)
 #define POC_MUSTTAIL [[clang::musttail]]
@@ -13,24 +13,7 @@
 #define POC_MUSTTAIL
 #endif
 
-#define POC_ITEM_TRACE(...) POC_LOGGER_TRACE(poc::logger(), __VA_ARGS__)
-#define POC_ITEM_DEBUG(...) POC_LOGGER_DEBUG(poc::logger(), __VA_ARGS__)
-#define POC_ITEM_INFO(...) POC_LOGGER_INFO(poc::logger(), __VA_ARGS__)
-#define POC_ITEM_WARN(...) POC_LOGGER_WARN(poc::logger(), __VA_ARGS__)
-#define POC_ITEM_ERROR(...) POC_LOGGER_ERROR(poc::logger(), __VA_ARGS__)
-#define POC_ITEM_CRITICAL(...) POC_LOGGER_CRITICAL(poc::logger(), __VA_ARGS__)
-
 namespace poc {
-
-namespace {
-
-auto logger() -> log::logger*
-{
-    static std::shared_ptr<log::logger> logger = log::make_logger("item_parser");
-    return logger.get();
-}
-
-} // namespace
 
 constexpr item_parser::state::function_table item_parser::state::base_table = [] {
     function_table table{};

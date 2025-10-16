@@ -1,4 +1,5 @@
 includes(
     "core",
-    "item"
+    "item",
+    "platform"
 )

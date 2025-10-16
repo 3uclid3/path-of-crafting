@@ -1,0 +1,21 @@
+R"ITEM(
+Item Class: Wow
+Rarity: Wow
+Wow
+--------
+Wow
+Physical Damage: 25-47
+Critical Strike Chance: 8.30%
+Attacks per Second: 1.50
+--------
+Requirements:
+Level: 50
+Int: 183 (unmet)
+--------
+Sockets: B-B
+--------
+Item Level: 57
+--------
+{ Implicit Modifier — Damage, Minion }
+Minions deal 23(20-24)% increased Damage (implicit)
+)ITEM"

@@ -11,7 +11,8 @@ target("poc.doctest")
     set_default(false)
     
     add_packages("doctest", {public = true})
-    
+    add_deps("poc.core")
+
     add_includedirs(".", {public = true})
     add_files("main.cpp")
     

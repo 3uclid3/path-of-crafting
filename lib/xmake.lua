@@ -1,3 +1,4 @@
 includes(
-    "core"
+    "core",
+    "item"
 )

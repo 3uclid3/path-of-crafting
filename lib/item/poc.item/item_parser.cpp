@@ -2,10 +2,10 @@
 
 #include <charconv>
 
-#include <poc/algorithm.hpp>
-#include <poc/item.hpp>
-#include <poc/item/log.hpp>
-#include <poc/item_line_index.hpp>
+#include <poc.core/algorithm.hpp>
+#include <poc.item/item.hpp>
+#include <poc.item/item_line_index.hpp>
+#include <poc.item/log.hpp>
 
 #if defined(__clang__) && __has_attribute(musttail)
 #define POC_MUSTTAIL [[clang::musttail]]

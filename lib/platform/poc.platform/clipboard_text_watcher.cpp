@@ -110,7 +110,9 @@ clipboard_text_watcher::~clipboard_text_watcher()
 
 namespace poc::platform {
 
-clipboard_text_watcher::clipboard_text_watcher(window&, text_changed_callback)
+clipboard_text_watcher::clipboard_text_watcher(window& win, text_changed_callback changed)
+    : _window(win)
+    , _callback(std::move(changed))
 {
 }
 

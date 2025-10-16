@@ -12,6 +12,7 @@ target("poc.doctest")
     
     add_packages("doctest", {public = true})
     
-    add_defines("DOCTEST_CONFIG_USE_STD_HEADERS", {public = true})
-    
+    add_includedirs(".", {public = true})
     add_files("main.cpp")
+    
+    add_defines("DOCTEST_CONFIG_USE_STD_HEADERS", {public = true})

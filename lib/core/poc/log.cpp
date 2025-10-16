@@ -18,7 +18,7 @@ namespace poc::log {
 #if SPDLOG_ACTIVE_LEVEL != SPDLOG_LEVEL_OFF
 namespace details {
 
-options options;
+log::options options;
 std::vector<spdlog::sink_ptr> sinks;
 
 auto make_logger(const std::string& name) -> std::shared_ptr<logger>
@@ -67,7 +67,6 @@ auto uninit() -> void
 {
     details::sinks.clear();
 
-    spdlog::set_default_logger(nullptr);
     spdlog::shutdown();
 }
 

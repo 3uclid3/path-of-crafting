@@ -52,11 +52,15 @@ jobs:
 
       - name: Generate coverage report
         if: matrix.build_type == 'coverage'
-        run: >
-          gcovr . --xml-pretty
-          -o "build/coverage.xml"
-          --gcov-executable "llvm-cov gcov"
-          --object-directory "build/.objs"
+        run: |
+          gcovr \
+            --root "$GITHUB_WORKSPACE" \
+            --filter "$GITHUB_WORKSPACE/app" \
+            --filter "$GITHUB_WORKSPACE/lib" \
+            --gcov-executable "llvm-cov gcov" \
+            --object-directory "build/.objs" \
+            --xml --xml-pretty \
+            -o "build/coverage.xml"
 
       - name: Upload coverage to Codecov
         if: matrix.build_type == 'coverage'
@@ -93,7 +97,7 @@ jobs:
         uses: xmake-io/github-action-setup-xmake@v1
         with:
           package-cache: true
-          
+
       - name: Setup Python (coverage only)
         if: matrix.build_type == 'coverage'
         uses: actions/setup-python@v5
@@ -125,11 +129,15 @@ jobs:
 
       - name: Generate coverage report
         if: matrix.build_type == 'coverage'
-        run: >
-          gcovr . --xml-pretty
-          -o "build/coverage.xml"
-          --gcov-executable "llvm-cov gcov"
-          --object-directory "build/.objs"
+        run: |
+          gcovr \
+            --root "$GITHUB_WORKSPACE" \
+            --filter "$GITHUB_WORKSPACE/app" \
+            --filter "$GITHUB_WORKSPACE/lib" \
+            --gcov-executable "llvm-cov gcov" \
+            --object-directory "build/.objs" \
+            --xml --xml-pretty \
+            -o "build/coverage.xml"
 
       - name: Upload coverage to Codecov
         if: matrix.build_type == 'coverage'

@@ -90,23 +90,17 @@ clipboard_text_watcher::clipboard_text_watcher(window& win, text_changed_callbac
     : _window(win)
     , _callback(std::move(changed))
 {
-#ifdef SDL_PLATFORM_WIN32
     watch_clipboard_changed(_window.handle(), _callback);
-#endif
 }
 
 clipboard_text_watcher::~clipboard_text_watcher()
 {
-#ifdef SDL_PLATFORM_WIN32
     stop_watch_clipboard_changed(_window.handle());
-#endif
 }
 
 } // namespace poc::platform
 
 #else
-
-#warning "clipboard_text_watcher is only supported on Windows platform"
 
 namespace poc::platform {
 

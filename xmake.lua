@@ -1,4 +1,4 @@
-set_project("nubwork")
+set_project("Path of Crafting")
 set_version("v0.1.0")
 set_license("GPL-3.0-or-later")
 

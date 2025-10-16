@@ -1,7 +1,7 @@
 #pragma once
 
-namespace nubwork {
+namespace poc {
 
 auto return_true() noexcept -> bool;
 
-} // namespace nubwork
+} // namespace poc

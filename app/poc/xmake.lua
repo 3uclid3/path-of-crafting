@@ -1,9 +1,9 @@
-target("nubwork")
+target("poc")
     set_kind("binary")
     set_group("app")
 
     add_deps(
-        "nubwork.core"
+        "poc.core"
     )
 
     add_files("main.cpp")

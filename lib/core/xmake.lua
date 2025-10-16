@@ -1,4 +1,4 @@
-target("nubwork.core")
+target("poc.core")
     set_kind("static")
     set_group("lib")
 

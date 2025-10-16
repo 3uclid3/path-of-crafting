@@ -1,4 +1,4 @@
-target("nubwork.core.tests.unit")
+target("poc.core.tests.unit")
     set_kind("binary")
     set_group("tests.unit")
 
@@ -9,11 +9,11 @@ target("nubwork.core.tests.unit")
         kind = "binary",
         runargs = {
             "--reporters=junit",
-            "--out=" .. junit_out("nubwork.core.tests.unit"),
+            "--out=" .. junit_out("poc.core.tests.unit"),
         }
     })
 
-    add_deps("nubwork.doctest", "nubwork.core")
+    add_deps("poc.doctest", "poc.core")
     
     add_includedirs(".")
     add_files("**.cpp")

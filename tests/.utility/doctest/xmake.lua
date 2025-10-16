@@ -5,7 +5,7 @@ function junit_out(targetname)
     return path.join(os.projectdir(), "build", string.format("%s.junit.xml", targetname))
 end
 
-target("nubwork.doctest")
+target("poc.doctest")
     set_kind("static")
     set_group("tests.utility")
     set_default(false)

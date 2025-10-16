@@ -24,7 +24,7 @@ using logger = spdlog::logger;
 
 struct options
 {
-    std::string file;
+    string file;
     spdlog::level::level_enum level;
     spdlog::level::level_enum flush_on_level;
 };
@@ -37,6 +37,6 @@ static inline const options default_options{
 auto init(const options& options = default_options) -> void;
 auto uninit() -> void;
 
-auto make(const std::string& name) -> std::shared_ptr<logger>;
+auto make_logger(const string& name) -> std::shared_ptr<logger>;
 
 } // namespace poc::log

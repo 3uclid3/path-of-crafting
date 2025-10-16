@@ -1,7 +1,6 @@
 #include <poc/log.hpp>
 
 #include <memory>
-#include <mutex>
 #include <vector>
 
 #include <spdlog/async.h>
@@ -21,12 +20,6 @@ namespace details {
 log::options options;
 std::vector<spdlog::sink_ptr> sinks;
 
-auto make_logger(const std::string& name) -> std::shared_ptr<logger>
-{
-    POC_ASSERT(!sinks.empty());
-    return std::make_shared<logger>(name, sinks.begin(), sinks.end());
-}
-
 auto create_sinks() -> void
 {
     sinks.push_back(std::make_shared<spdlog::sinks::stdout_color_sink_mt>());
@@ -40,7 +33,9 @@ auto create_sinks() -> void
 
 auto create_default_logger() -> void
 {
-    auto default_logger = make_logger("");
+    POC_ASSERT(!sinks.empty());
+
+    auto default_logger = std::make_shared<logger>("", details::sinks.begin(), details::sinks.end());
 
     default_logger->set_level(options.level);
     default_logger->flush_on(options.flush_on_level);
@@ -59,8 +54,6 @@ auto init(const options& options) -> void
 
     details::create_sinks();
     details::create_default_logger();
-
-    POC_INFO("Log level: {}", spdlog::level::to_string_view(spdlog::default_logger()->level()));
 }
 
 auto uninit() -> void
@@ -70,13 +63,13 @@ auto uninit() -> void
     spdlog::shutdown();
 }
 
-auto make(const std::string& name) -> std::shared_ptr<logger>
+auto make_logger(const string& name) -> std::shared_ptr<logger>
 {
-    auto new_logger = details::make_logger(name);
+    POC_ASSERT(!details::sinks.empty());
+
+    auto new_logger = std::make_shared<logger>(name, details::sinks.begin(), details::sinks.end());
 
     spdlog::initialize_logger(new_logger);
-
-    POC_TRACE("Logger {} added with log level {}", name, spdlog::level::to_string_view(new_logger->level()));
 
     return new_logger;
 }
@@ -91,7 +84,7 @@ auto uninit() -> void
 {
 }
 
-auto make(const std::string&) -> std::shared_ptr<logger>
+auto make_logger(const std::string&) -> std::shared_ptr<logger>
 {
     static std::shared_ptr<logger> null_logger = std::make_shared<logger>("null");
     return null_logger;

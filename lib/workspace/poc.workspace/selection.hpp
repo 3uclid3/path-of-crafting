@@ -3,9 +3,13 @@
 #include <span>
 #include <vector>
 
+#include <poc.core/signal.hpp>
+#include <poc.core/utility/tagged.hpp>
 #include <poc.workspace/item_id.hpp>
 
 namespace poc::workspace {
+
+using selected = tagged<bool, struct selected_tag>;
 
 class selection
 {
@@ -17,6 +21,9 @@ public:
     using const_iterator = storage_type::const_iterator;
 
 public:
+    using changed_signal = inplace_signal<8, selected, std::span<const value_type>>;
+
+public:
     [[nodiscard]] auto empty() const noexcept -> bool;
     [[nodiscard]] auto size() const noexcept -> size_type;
 
@@ -26,8 +33,8 @@ public:
     auto deselect(value_type value) -> void;
     auto toggle(value_type value) -> void;
 
-    auto select(std::span<const value_type> value) -> size_type;
-    auto deselect(std::span<const value_type> value) -> size_type;
+    auto select(std::span<const value_type> value) -> void;
+    auto deselect(std::span<const value_type> value) -> void;
 
     auto clear() noexcept -> void;
     auto reserve(size_type size) -> void;
@@ -38,8 +45,11 @@ public:
     [[nodiscard]] auto begin() noexcept -> iterator;
     [[nodiscard]] auto end() noexcept -> iterator;
 
+    [[nodiscard]] auto changed() noexcept -> changed_signal&;
+
 private:
     storage_type _items;
+    changed_signal _changed;
 };
 
 } // namespace poc::workspace

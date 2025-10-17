@@ -26,7 +26,7 @@ template<std::size_t InplaceSize, class Allocator, class... Args>
 class basic_inplace_signal;
 
 template<class... Args>
-using signal = basic_inplace_signal<1, std::allocator<std::byte>, Args...>;
+using signal = basic_inplace_signal<0, std::allocator<std::byte>, Args...>;
 
 template<std::size_t InplaceSize, class... Args>
 using inplace_signal = basic_inplace_signal<InplaceSize, std::allocator<std::byte>, Args...>;

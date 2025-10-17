@@ -283,7 +283,7 @@ auto item_parser::state::parse_header::parse_rarity(item_parser& self, string_vi
     }
 }
 
-auto item_parser::state::parse_header::parse_kind(item_parser&, string_view value) -> void
+auto item_parser::state::parse_header::parse_kind(item_parser&, string_view value [[maybe_unused]]) -> void
 {
     POC_ITEM_WARN("Unknown item kind: {}", value);
 }
@@ -295,7 +295,7 @@ auto item_parser::state::parse_explicits::parse_braced(item_parser& self) -> voi
     const auto line = self.line();
     const auto content = line.unbraced();
 
-    const auto report_invalid_and_consume = [&self, &content]() {
+    const auto report_invalid_and_consume = [&]() {
         POC_ITEM_ERROR("Invalid explicit format: {}", content);
         self.consume_line();
     };

@@ -26,7 +26,7 @@ auto main() -> int
     gui::backend::sdl3_opengl::init(window);
     on_scope_exit gui_backend_uninit{gui::backend::sdl3_opengl::uninit};
 
-    platform::clipboard_text_watcher watcher(window, [](std::string_view text) {
+    platform::clipboard_text_watcher watcher(window, [](std::string_view text [[maybe_unused]]) {
         POC_INFO("Clipboard text changed: {}", text);
     });
 

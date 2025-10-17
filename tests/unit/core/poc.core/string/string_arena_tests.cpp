@@ -57,6 +57,75 @@ TEST_CASE_TEMPLATE("basic_string_arena::allocate", T, char, char8_t, wchar_t)
     CHECK_EQ(statistics.allocation_count, 1);
 }
 
+TEST_CASE_TEMPLATE("basic_string_arena::lease move constructor", T, char, char8_t, wchar_t)
+{
+    using string_arena = basic_string_arena<T, page_size>;
+    using string_lease = typename string_arena::lease;
+    using string_view = typename string_arena::view_type;
+
+    string_arena arena;
+    string_view str = TEST_STRING("Move me!");
+
+    auto original_statistics = arena.statistics();
+    CHECK_EQ(original_statistics.allocation_count, 0);
+    CHECK_EQ(original_statistics.allocated_bytes, 0);
+
+    {
+        string_lease original = arena.allocate(str);
+        string_lease moved{std::move(original)};
+
+        CHECK_FALSE(original.is_valid());
+        CHECK_EQ(original.view(), string_view{});
+
+        CHECK(moved.is_valid());
+        CHECK_EQ(moved.view(), str);
+
+        auto statistics = arena.statistics();
+        CHECK_EQ(statistics.allocation_count, 1);
+        CHECK_EQ(statistics.allocated_bytes, str.size() * sizeof(T));
+    }
+
+    auto final_statistics = arena.statistics();
+    CHECK_EQ(final_statistics.allocation_count, 0);
+    CHECK_EQ(final_statistics.allocated_bytes, 0);
+}
+
+TEST_CASE_TEMPLATE("basic_string_arena::lease move assignment", T, char, char8_t, wchar_t)
+{
+    using string_arena = basic_string_arena<T, page_size>;
+    using string_lease = typename string_arena::lease;
+    using string_view = typename string_arena::view_type;
+
+    string_arena arena;
+    string_view first = TEST_STRING("First");
+    string_view second = TEST_STRING("Second");
+
+    string_lease lease = arena.allocate(first);
+    string_lease other = arena.allocate(second);
+
+    auto statistics = arena.statistics();
+    CHECK_EQ(statistics.allocation_count, 2);
+    CHECK_EQ(statistics.allocated_bytes, (first.size() + second.size()) * sizeof(T));
+
+    lease = std::move(other);
+
+    CHECK_FALSE(other.is_valid());
+    CHECK_EQ(other.view(), string_view{});
+
+    CHECK(lease.is_valid());
+    CHECK_EQ(lease.view(), second);
+
+    statistics = arena.statistics();
+    CHECK_EQ(statistics.allocation_count, 1);
+    CHECK_EQ(statistics.allocated_bytes, second.size() * sizeof(T));
+
+    lease.release();
+
+    statistics = arena.statistics();
+    CHECK_EQ(statistics.allocation_count, 0);
+    CHECK_EQ(statistics.allocated_bytes, 0);
+}
+
 TEST_CASE_TEMPLATE("basic_string_arena::release", T, char, char8_t, wchar_t)
 {
     using string_arena = basic_string_arena<T, page_size>;

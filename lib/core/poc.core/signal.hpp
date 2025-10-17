@@ -367,19 +367,11 @@ auto basic_inplace_signal<InplaceSize, Allocator, Args...>::connect(F&& f) -> co
     auto& slot = _slots[index];
     const auto* vtable = slot_vtable_for<Fn>();
 
-    try
-    {
-        new (&slot.storage) Fn(std::forward<F>(f));
-        slot.vtable = vtable;
-        _useds[index] = true;
-        ++_connected_size;
-        _added_size = std::max(_added_size, index + 1);
-    }
-    catch (...)
-    {
-        slot.vtable = nullptr;
-        throw;
-    }
+    new (&slot.storage) Fn(std::forward<F>(f));
+    slot.vtable = vtable;
+    _useds[index] = true;
+    ++_connected_size;
+    _added_size = std::max(_added_size, index + 1);
 
     return connection(this, index);
 }
@@ -642,36 +634,18 @@ auto basic_inplace_signal<InplaceSize, Allocator, Args...>::grow_heap(size_type 
     const size_type old_heap_capacity = _heap_capacity;
     const size_type limit = _added_size;
 
-    try
+    for (size_type i = 0; i < limit; ++i)
     {
-        for (size_type i = 0; i < limit; ++i)
-        {
-            const bool slot_used = old_useds != nullptr && old_useds[i];
-            new_useds[i] = slot_used;
+        const bool slot_used = old_useds != nullptr && old_useds[i];
+        new_useds[i] = slot_used;
 
-            if (slot_used)
-            {
-                auto& src_slot = old_slots[i];
-                auto& dst_slot = new_slots[i];
-                dst_slot.vtable = src_slot.vtable;
-                dst_slot.vtable->move(&dst_slot.storage, &src_slot.storage);
-            }
-        }
-    }
-    catch (...)
-    {
-        for (size_type i = 0; i < limit; ++i)
+        if (slot_used)
         {
-            if (new_useds[i] && new_slots[i].vtable != nullptr)
-            {
-                new_slots[i].vtable->destroy(&new_slots[i].storage);
-                new_slots[i].vtable = nullptr;
-            }
+            auto& src_slot = old_slots[i];
+            auto& dst_slot = new_slots[i];
+            dst_slot.vtable = src_slot.vtable;
+            dst_slot.vtable->move(&dst_slot.storage, &src_slot.storage);
         }
-
-        std::destroy_n(new_slots, new_cap);
-        std::allocator_traits<allocator_type>::deallocate(_allocator, raw_mem, total_bytes);
-        throw;
     }
 
     for (size_type i = 0; i < limit; ++i)

@@ -607,7 +607,10 @@ auto basic_inplace_signal<InplaceSize, Allocator, Args...>::ensure_capacity(size
 template<std::size_t InplaceSize, class Allocator, class... Args>
 auto basic_inplace_signal<InplaceSize, Allocator, Args...>::allocation_size(size_type cap) const noexcept -> size_type
 {
-    return cap * sizeof(slot) + cap * sizeof(bool);
+    const size_type slot_array_size = cap * sizeof(slot);
+    const size_type bool_array_offset = (slot_array_size + alignof(bool) - 1) & ~(alignof(bool) - 1);
+
+    return bool_array_offset + cap * sizeof(bool);
 }
 
 template<std::size_t InplaceSize, class Allocator, class... Args>

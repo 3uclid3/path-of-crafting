@@ -11,7 +11,7 @@ target("poc.core")
     add_headerfiles("**.hpp")
     add_files("**.cpp")
 
-    add_defines("SPDLOG_DISABLE_DEFAULT_LOGGER", "SPDLOG_USE_STD_FORMAT", { public = true })
+    add_defines("SPDLOG_DISABLE_DEFAULT_LOGGER", "SPDLOG_USE_STD_FORMAT", "SPDLOG_NO_EXCEPTIONS", { public = true })
     if is_mode("debug") then
         add_defines("SPDLOG_ACTIVE_LEVEL=SPDLOG_LEVEL_TRACE", { public = true })
     elseif is_mode("release") then

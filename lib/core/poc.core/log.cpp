@@ -11,6 +11,7 @@
 #include <spdlog/spdlog.h>
 
 #include <poc.core/assert.hpp>
+#include <poc.core/def.hpp>
 
 namespace poc::log {
 
@@ -76,15 +77,15 @@ auto make_logger(const string& name) -> std::shared_ptr<logger>
 
 #else
 
-auto init(const options&) -> void
+POC_COVERAGE_DISABLED auto init(const options&) -> void
 {
 }
 
-auto uninit() -> void
+POC_COVERAGE_DISABLED auto uninit() -> void
 {
 }
 
-auto make_logger(const std::string&) -> std::shared_ptr<logger>
+POC_COVERAGE_DISABLED auto make_logger(const std::string&) -> std::shared_ptr<logger>
 {
     static std::shared_ptr<logger> null_logger = std::make_shared<logger>("null");
     return null_logger;

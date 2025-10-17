@@ -30,7 +30,7 @@ auto selection::select(value_type value) -> bool
         return false;
     }
 
-    select_no_check(value);
+    add_and_emit(value);
     return true;
 }
 
@@ -42,7 +42,7 @@ auto selection::deselect(value_type value) -> bool
         return false;
     }
 
-    deselect_no_check(value, it);
+    remove_and_emit(value, it);
     return true;
 }
 
@@ -52,12 +52,12 @@ auto selection::toggle(value_type value) -> selected
 
     if (it == _items.end())
     {
-        select_no_check(value);
+        add_and_emit(value);
         return selected(true);
     }
     else
     {
-        deselect_no_check(value, it);
+        remove_and_emit(value, it);
         return selected(false);
     }
 }
@@ -147,13 +147,13 @@ auto selection::changed() noexcept -> changed_signal&
     return _changed;
 }
 
-auto selection::select_no_check(value_type value) -> void
+auto selection::add_and_emit(value_type value) -> void
 {
     _items.push_back(value);
     _changed.emit(selected(true), std::span<const value_type>{&value, 1});
 }
 
-auto selection::deselect_no_check(value_type value, storage_type::iterator it) -> void
+auto selection::remove_and_emit(value_type value, storage_type::iterator it) -> void
 {
     auto last = _items.end() - 1;
     if (it != last)

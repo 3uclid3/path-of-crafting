@@ -44,8 +44,8 @@ public:
     [[nodiscard]] auto changed() noexcept -> changed_signal&;
 
 private:
-    auto select_no_check(value_type value) -> void;
-    auto deselect_no_check(value_type value, storage_type::iterator it) -> void;
+    auto add_and_emit(value_type value) -> void;
+    auto remove_and_emit(value_type value, storage_type::iterator it) -> void;
 
     storage_type _items;
     changed_signal _changed;

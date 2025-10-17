@@ -242,11 +242,6 @@ inline auto item_line_index::const_iterator::operator*() const noexcept -> value
 
 inline auto item_line_index::at(size_type index) const -> line
 {
-    if (index >= size())
-    {
-        throw std::out_of_range("item_line_index::at: index out of range");
-    }
-
     return (*this)[index];
 }
 

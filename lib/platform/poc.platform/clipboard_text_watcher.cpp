@@ -1,6 +1,6 @@
 #include <poc.platform/clipboard_text_watcher.hpp>
 
-#include <SDL3/SDL.h>
+#include <poc.platform/log.hpp>
 
 #ifdef SDL_PLATFORM_WIN32
 
@@ -14,7 +14,8 @@
 
 #include <windows.h>
 
-#include <poc.platform/log.hpp>
+#include <SDL3/SDL.h>
+
 #include <poc.platform/window.hpp>
 
 namespace poc::platform {
@@ -108,6 +109,10 @@ clipboard_text_watcher::clipboard_text_watcher(window& win, text_changed_callbac
     : _window(win)
     , _callback(std::move(changed))
 {
+    [[maybe_unused]] auto& _ = _window;
+    [[maybe_unused]] auto& __ = _callback;
+
+    POC_PLATFORM_WARN("clipboard_text_watcher is not implemented on this platform");
 }
 
 clipboard_text_watcher::~clipboard_text_watcher()

@@ -31,34 +31,6 @@ struct item_id_traits
     static_assert((version_mask & (version_mask + 1)) == 0, "invalid version mask");
 };
 
-struct null_item_id_t
-{
-    [[nodiscard]] constexpr operator item_id() const noexcept;
-
-    [[nodiscard]] constexpr auto operator==(null_item_id_t) const noexcept -> bool;
-    [[nodiscard]] constexpr auto operator!=(null_item_id_t) const noexcept -> bool;
-    [[nodiscard]] constexpr auto operator==(item_id item_id) const noexcept -> bool;
-    [[nodiscard]] constexpr auto operator!=(item_id item_id) const noexcept -> bool;
-};
-
-[[nodiscard]] constexpr auto operator==(item_id lhs, null_item_id_t rhs) noexcept -> bool;
-
-static inline constexpr null_item_id_t null_item_id{};
-
-struct tombstone_item_id_t
-{
-    [[nodiscard]] constexpr operator item_id() const noexcept;
-
-    [[nodiscard]] constexpr auto operator==(tombstone_item_id_t) const noexcept -> bool;
-    [[nodiscard]] constexpr auto operator!=(tombstone_item_id_t) const noexcept -> bool;
-    [[nodiscard]] constexpr auto operator==(item_id item_id) const noexcept -> bool;
-    [[nodiscard]] constexpr auto operator!=(item_id item_id) const noexcept -> bool;
-};
-
-[[nodiscard]] constexpr auto operator==(item_id lhs, tombstone_item_id_t rhs) noexcept -> bool;
-
-static inline constexpr tombstone_item_id_t tombstone_item_id{};
-
 constexpr auto item_id_traits::to_integral(value_type value) noexcept -> integral_type
 {
     return static_cast<integral_type>(value);
@@ -110,66 +82,6 @@ constexpr auto item_id_traits::merge(auto value_for_index, auto value_for_versio
 
         return static_cast<value_type>((value_for_index & index_mask) | (value_for_version & (version_mask << std::popcount(index_mask))));
     }
-}
-
-constexpr null_item_id_t::operator item_id() const noexcept
-{
-    return item_id_traits::construct(item_id_traits::index_mask, item_id_traits::version_mask);
-}
-
-constexpr auto null_item_id_t::operator==(null_item_id_t) const noexcept -> bool
-{
-    return true;
-}
-
-constexpr auto null_item_id_t::operator!=(null_item_id_t) const noexcept -> bool
-{
-    return false;
-}
-
-constexpr auto null_item_id_t::operator==(item_id id) const noexcept -> bool
-{
-    return item_id_traits::to_index(id) == item_id_traits::to_index(*this);
-}
-
-constexpr auto null_item_id_t::operator!=(item_id id) const noexcept -> bool
-{
-    return !operator==(id);
-}
-
-constexpr auto operator==(item_id lhs, null_item_id_t rhs) noexcept -> bool
-{
-    return rhs.operator==(lhs);
-}
-
-constexpr tombstone_item_id_t::operator item_id() const noexcept
-{
-    return item_id_traits::construct(item_id_traits::index_mask, item_id_traits::version_mask);
-}
-
-constexpr auto tombstone_item_id_t::operator==(tombstone_item_id_t) const noexcept -> bool
-{
-    return true;
-}
-
-constexpr auto tombstone_item_id_t::operator!=(tombstone_item_id_t) const noexcept -> bool
-{
-    return false;
-}
-
-constexpr auto tombstone_item_id_t::operator==(item_id id) const noexcept -> bool
-{
-    return item_id_traits::to_version(id) == item_id_traits::to_version(*this);
-}
-
-constexpr auto tombstone_item_id_t::operator!=(item_id id) const noexcept -> bool
-{
-    return !operator==(id);
-}
-
-constexpr auto operator==(item_id lhs, tombstone_item_id_t rhs) noexcept -> bool
-{
-    return rhs.operator==(lhs);
 }
 
 } // namespace poc::workspace

@@ -1,5 +1,6 @@
 #include <array>
 #include <format>
+#include <vector>
 
 #include <doctest/doctest.h>
 
@@ -123,6 +124,36 @@ TEST_CASE_FIXTURE(fixture, "item_repository: adding past initial capacity grows 
         REQUIRE(stored != nullptr);
         CHECK_EQ(stored->name(), std::format("Item {}", i));
     }
+}
+
+TEST_CASE_FIXTURE(fixture, "item_repository: added signal emits generated ids")
+{
+    std::vector<item_id> observed;
+    auto connection = repository.added().connect([&](item_id id) { observed.push_back(id); });
+
+    const auto first = repository.add(make_item("First signal"));
+    const auto second = repository.add(make_item("Second signal"));
+
+    REQUIRE_EQ(observed.size(), 2);
+    CHECK_EQ(observed[0], first);
+    CHECK_EQ(observed[1], second);
+}
+
+TEST_CASE_FIXTURE(fixture, "item_repository: removed signal emits removed ids")
+{
+    std::vector<item_id> observed;
+    auto connection = repository.removed().connect([&](item_id id) { observed.push_back(id); });
+
+    const auto first = repository.add(make_item("First removal"));
+    const auto second = repository.add(make_item("Second removal"));
+
+    REQUIRE(repository.remove(first));
+    REQUIRE(repository.remove(second));
+    CHECK_FALSE(repository.remove(first));
+
+    REQUIRE_EQ(observed.size(), 2);
+    CHECK_EQ(observed[0], first);
+    CHECK_EQ(observed[1], second);
 }
 
 }} // namespace poc::workspace

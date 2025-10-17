@@ -14,7 +14,7 @@ auto item_repository::add(value_type&& item) -> item_id
 {
     size_type slot_index;
 
-    if (_free_head != slot_traits::to_index(null_slot))
+    if (_free_head != invalid_slot_index)
     {
         auto& slot = _slots[_free_head];
 
@@ -31,7 +31,10 @@ auto item_repository::add(value_type&& item) -> item_id
     _timestamps.push_back(clock::now());
     _dense2slots.push_back(slot_index);
 
-    return item_id_traits::merge(slot_index, _slots[slot_index]);
+    const item_id id = item_id_traits::merge(slot_index, _slots[slot_index]);
+    _added.emit(id);
+
+    return id;
 }
 
 auto item_repository::remove(item_id id) -> bool
@@ -69,6 +72,8 @@ auto item_repository::remove(item_id id) -> bool
 
     slot = slot_traits::merge(_free_head, slot_traits::next(slot));
     _free_head = slot_index;
+
+    _removed.emit(id);
 
     return true;
 }
@@ -129,6 +134,16 @@ auto item_repository::size() const noexcept -> size_type
 auto item_repository::empty() const noexcept -> bool
 {
     return size() == 0;
+}
+
+auto item_repository::added() noexcept -> added_signal&
+{
+    return _added;
+}
+
+auto item_repository::removed() noexcept -> removed_signal&
+{
+    return _removed;
 }
 
 } // namespace poc::workspace

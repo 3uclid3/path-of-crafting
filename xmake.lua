@@ -10,6 +10,8 @@ set_toolchains("llvm")
 
 if is_plat("windows") then
     set_runtimes("MT")
+elseif is_plat("linux") then 
+    set_runtimes("c++_static")
 end
 
 add_rules("mode.debug", "mode.release", "mode.coverage")

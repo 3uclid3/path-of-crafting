@@ -295,20 +295,23 @@ auto item_parser::state::parse_explicits::parse_braced(item_parser& self) -> voi
         self.consume_line();
     };
 
+    std::size_t modifier_kind_length = 0;
     if (content.starts_with("Prefix Modifier"))
     {
         self._builder.begin_modifier(modifier_kind::prefix);
+        modifier_kind_length = sizeof("Prefix Modifier") - 1;
     }
     else if (content.starts_with("Suffix Modifier"))
     {
         self._builder.begin_modifier(modifier_kind::suffix);
+        modifier_kind_length = sizeof("Suffix Modifier") - 1;
     }
     else
     {
         return report_invalid_and_consume();
     }
 
-    const auto name_start = content.find('"', 16); // after "Prefix Modifier" or "Suffix Modifier"
+    const auto name_start = content.find('"', modifier_kind_length);
     if (name_start == std::string_view::npos)
     {
         return report_invalid_and_consume();

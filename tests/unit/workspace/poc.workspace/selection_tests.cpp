@@ -95,6 +95,23 @@ TEST_CASE("selection: reserve")
     CHECK_EQ(s.size(), 0);
 }
 
+TEST_CASE("selection: iterable")
+{
+    selection s;
+    s.select(std::vector{item_id{1}, item_id{2}, item_id{3}});
+
+    std::vector<item_id> items;
+    for (const auto& item : s)
+    {
+        items.push_back(item);
+    }
+
+    REQUIRE_EQ(items.size(), 3);
+    CHECK_EQ(items[0], item_id{1});
+    CHECK_EQ(items[1], item_id{2});
+    CHECK_EQ(items[2], item_id{3});
+}
+
 TEST_CASE("selection: changed signal")
 {
     selection s;

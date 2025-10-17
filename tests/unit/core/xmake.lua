@@ -16,4 +16,4 @@ target("poc.core.tests.unit")
     add_deps("poc.doctest", "poc.core")
     
     add_includedirs(".")
-    add_files("**.cpp")
+    add_files("poc.core/**.cpp")

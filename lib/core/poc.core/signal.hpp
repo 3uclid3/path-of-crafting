@@ -420,10 +420,6 @@ auto basic_inplace_signal<InplaceSize, Allocator, Args...>::disconnect_all() noe
             }
             _useds[i] = false;
         }
-        else if (_slots[i].vtable != nullptr)
-        {
-            _slots[i].vtable = nullptr;
-        }
     }
 
     _connected_size = 0;

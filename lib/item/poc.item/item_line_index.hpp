@@ -52,7 +52,6 @@ public:
     auto operator=(const item_line_index& other) -> item_line_index& = delete;
 
     auto operator[](size_type index) const noexcept -> line;
-    auto at(size_type index) const -> line;
 
     auto size() const noexcept -> size_type;
     auto empty() const noexcept -> bool;
@@ -238,11 +237,6 @@ inline auto item_line_index::const_iterator::operator++(int) noexcept -> const_i
 inline auto item_line_index::const_iterator::operator*() const noexcept -> value_type
 {
     return _source.get()[_index];
-}
-
-inline auto item_line_index::at(size_type index) const -> line
-{
-    return (*this)[index];
 }
 
 inline auto item_line_index::size() const noexcept -> size_type

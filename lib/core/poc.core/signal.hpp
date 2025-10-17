@@ -707,7 +707,7 @@ auto basic_inplace_signal<InplaceSize, Allocator, Args...>::end_block() noexcept
 template<std::size_t InplaceSize, class Allocator, class... Args>
 auto basic_inplace_signal<InplaceSize, Allocator, Args...>::can_move() const noexcept -> bool
 {
-    return _connected_size == 0;
+    return _connected_size == 0 && _block_count == 0;
 }
 
 template<std::size_t InplaceSize, class Allocator, class... Args>

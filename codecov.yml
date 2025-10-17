@@ -25,4 +25,6 @@ ignore:
   - ".xmake/**"
   - "build/**"
   - "docker/**"
+  - "lib/gui/**"
+  - "lib/platform/**"
   - "tests/**"

@@ -34,8 +34,8 @@ public:
     constexpr item_blob(const item_blob&) = delete;
     constexpr item_blob& operator=(const item_blob&) = delete;
 
-    constexpr item_blob(item_blob&&) noexcept = default;
-    constexpr item_blob& operator=(item_blob&&) noexcept = default;
+    constexpr item_blob(item_blob&&) noexcept;
+    constexpr item_blob& operator=(item_blob&&) noexcept;
 
     constexpr auto empty() const noexcept -> bool;
     constexpr auto size() const noexcept -> size_type;
@@ -68,6 +68,22 @@ constexpr item_blob::item_blob(string_view_type raw)
     : _storage(std::in_place_type_t<string_buffer_type>(), string_buffer_type(std::begin(raw), std::end(raw)))
     , _view(string_view_type(std::get<string_buffer_type>(_storage)))
 {
+}
+
+constexpr item_blob::item_blob(item_blob&& other) noexcept
+    : _storage(std::move(other._storage))
+    , _view(std::exchange(other._view, view_type()))
+{
+}
+
+constexpr item_blob& item_blob::operator=(item_blob&& other) noexcept
+{
+    if (this != &other)
+    {
+        _storage = std::move(other._storage);
+        _view = std::exchange(other._view, view_type());
+    }
+    return *this;
 }
 
 constexpr auto item_blob::empty() const noexcept -> bool

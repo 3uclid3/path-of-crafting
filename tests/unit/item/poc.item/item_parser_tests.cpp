@@ -5,6 +5,15 @@
 
 namespace poc { namespace {
 
+TEST_CASE("item_parser::can_parse")
+{
+    item_parser parser;
+
+    CHECK_FALSE(parser.can_parse(""));
+    CHECK_FALSE(parser.can_parse("Item Class"));
+    CHECK(parser.can_parse(item_blobs::unknown));
+}
+
 TEST_CASE("item_parser: empty returns error")
 {
     item_parser parser;

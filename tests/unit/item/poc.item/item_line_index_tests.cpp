@@ -2,8 +2,7 @@
 
 #include <poc.item/item_line_index.hpp>
 
-namespace poc {
-namespace {
+namespace poc { namespace {
 
 static const string raw_divider = "--------";
 static const string raw_key_value = "key: value";

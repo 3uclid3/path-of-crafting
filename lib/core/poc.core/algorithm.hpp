@@ -6,7 +6,7 @@
 
 namespace poc {
 
-// Counts occurrences of `value` in the range `[begin, end)` until `pred` returns false.
+// Counts occurrences of `value` in the range `[begin, end)` until `pred` returns true.
 template<typename InputIterator, typename T, typename Pred>
 constexpr auto count_until(InputIterator begin, InputIterator end, const T& value, Pred pred) -> typename std::iterator_traits<InputIterator>::difference_type
 {

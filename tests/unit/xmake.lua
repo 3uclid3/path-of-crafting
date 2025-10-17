@@ -15,7 +15,7 @@ target("poc.doctest")
 
     add_files("main.cpp")
     
-    add_defines("DOCTEST_CONFIG_USE_STD_HEADERS", {public = true})
+    add_defines("DOCTEST_CONFIG_USE_STD_HEADERS", "DOCTEST_CONFIG_NO_EXCEPTIONS_BUT_WITH_ALL_ASSERTS", {public = true})
 
 includes(
     -- utility/data library

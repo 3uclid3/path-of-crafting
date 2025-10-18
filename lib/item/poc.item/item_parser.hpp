@@ -1,5 +1,6 @@
 #pragma once
 
+#include <array>
 #include <expected>
 
 #include <poc.core/types.hpp>

@@ -63,7 +63,9 @@ auto host::remove_extension(extension_id id) -> bool
         return false;
 
     auto ext_ptr = it->second.get();
-    _extensions.erase(std::ranges::find(_extensions, ext_ptr), _extensions.end());
+
+    auto ext_it = std::ranges::find(_extensions, ext_ptr);
+    _extensions.erase(ext_it, ext_it + 1);
     _extension_by_ids.erase(it);
 
     return true;

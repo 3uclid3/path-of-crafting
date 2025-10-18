@@ -30,7 +30,7 @@ private:
     auto run() -> void;
 
 private:
-    std::atomic<bool> _running{true};
+    bool _running{true};
     std::thread _thread;
 
     std::mutex _mutex;

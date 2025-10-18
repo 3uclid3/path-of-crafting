@@ -13,7 +13,10 @@ ingester::ingester()
 
 ingester::~ingester() noexcept
 {
-    _running.store(false, std::memory_order_relaxed);
+    {
+        std::lock_guard lock(_mutex);
+        _running = false;
+    }
 
     _cv.notify_all();
 
@@ -59,13 +62,13 @@ auto ingester::run() -> void
     std::vector<item> parsed_items;
     parsed_items.reserve(_out.capacity());
 
-    while (_running.load(std::memory_order_relaxed))
+    while (_running)
     {
         {
             std::unique_lock lock(_mutex);
 
             _cv.wait(lock, [this]() {
-                return !_blobs.empty() || !_running.load(std::memory_order_relaxed);
+                return !_blobs.empty() || !_running;
             });
 
             std::swap(local_blobs, _blobs);

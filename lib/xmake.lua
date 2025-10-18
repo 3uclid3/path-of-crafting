@@ -1,6 +1,8 @@
 includes(
+    "app",
     "core",
     "gui",
     "item",
-    "platform"
+    "platform",
+    "workspace"
 )

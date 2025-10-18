@@ -3,6 +3,6 @@
 namespace poc::gui {
 
 auto new_frame() -> void;
-auto render() -> void;
+auto end_frame() -> void;
 
 } // namespace poc::gui

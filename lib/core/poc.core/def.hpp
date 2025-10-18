@@ -13,3 +13,11 @@
 #else
 #define POC_MUSTTAIL
 #endif
+
+#if __has_cpp_attribute(no_unique_address)
+#define POC_NO_UNIQUE_ADDRESS [[no_unique_address]]
+#elif __has_cpp_attribute(msvc::no_unique_address)
+#define POC_NO_UNIQUE_ADDRESS [[msvc::no_unique_address]]
+#else
+#define POC_NO_UNIQUE_ADDRESS
+#endif

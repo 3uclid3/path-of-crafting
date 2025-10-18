@@ -23,5 +23,6 @@ includes(
 
     -- tests
     "core",
-    "item"
+    "item",
+    "workspace"
 )

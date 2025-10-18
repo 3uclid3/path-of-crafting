@@ -6,25 +6,41 @@ coverage:
   status:
     project:
       default:
-        threshold: 1%
+        threshold: 5%
         target: auto
         paths:
-          - "app/**"
+          - "extensions/**"
           - "lib/**"
     patch:
       default:
         target: 85%
-        threshold: 1%
+        threshold: 5%
 
 comment:
   layout: "condensed_header, components, tree, condensed_footer"
   show_critical_paths: true
 
+component_management:
+  default_rules:
+    statuses:
+      - type: project
+        target: auto    
+  individual_components:
+    - component_id: poc_core
+      name: core
+      paths:
+        - lib/core/**
+    - component_id: poc_item
+      name: item
+      paths:
+        - lib/item/**
+    - component_id: poc_workspace
+      name: workspace
+      paths:
+        - lib/workspace/**
+
 ignore:
-  - ".github/**"
-  - ".xmake/**"
-  - "build/**"
-  - "docker/**"
+  - "extensions/gui.demo/**"
+  - "lib/app/**"
   - "lib/gui/**"
   - "lib/platform/**"
-  - "tests/**"

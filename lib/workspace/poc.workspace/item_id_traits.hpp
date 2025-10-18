@@ -1,8 +1,10 @@
 #pragma once
 
+#include <iostream>
 #include <type_traits>
 
 #include <poc.workspace/item_id.hpp>
+#include <poc.workspace/log.hpp>
 
 namespace poc::workspace {
 
@@ -54,11 +56,7 @@ constexpr auto item_id_traits::construct(index_type value, version_type version)
 constexpr auto item_id_traits::next(value_type value) noexcept -> value_type
 {
     const index_type index = to_index(value);
-    auto version = static_cast<version_type>((to_version(value) + 1) & version_mask);
-    if (version == version_mask)
-    {
-        version = 0;
-    }
+    auto version = static_cast<version_type>((to_version(value) + 1) % version_mask);
     return construct(index, version);
 }
 

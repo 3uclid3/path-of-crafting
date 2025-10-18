@@ -1,13 +1,14 @@
+#include <doctest/doctest.h>
+
+#include <poc.workspace/item_repository.hpp>
+
 #include <array>
 #include <format>
 #include <vector>
 
-#include <doctest/doctest.h>
-
 #include <poc.item/item.builder.hpp>
 #include <poc.item/item.hpp>
 #include <poc.workspace/item_id_traits.hpp>
-#include <poc.workspace/item_repository.hpp>
 
 namespace poc::workspace { namespace {
 

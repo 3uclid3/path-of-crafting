@@ -1,6 +1,5 @@
 #pragma once
 
-#include <poc.gui.core/demo.hpp>
 #include <poc.workspace/extension.hpp>
 
 namespace poc::gui::demo {

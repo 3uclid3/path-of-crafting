@@ -1,6 +1,5 @@
 #pragma once
 
-#include <iostream>
 #include <type_traits>
 
 #include <poc.workspace/item_id.hpp>

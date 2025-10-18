@@ -1,8 +1,6 @@
 #pragma once
 
 #include <cstdint>
-#include <stdexcept>
-#include <utility>
 #include <vector>
 
 #include <poc.core/assert.hpp>

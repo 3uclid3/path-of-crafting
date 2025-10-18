@@ -2,7 +2,6 @@
 
 #include <poc.core/container/static_vector.hpp>
 
-#include <algorithm>
 #include <limits>
 #include <utility>
 #include <vector>

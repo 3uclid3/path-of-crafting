@@ -1,7 +1,6 @@
 #include <poc.item/item_line_index.hpp>
 
-#include <algorithm>
-
+#include <poc.core/algorithm.hpp>
 #include <poc.core/assert.hpp>
 
 namespace poc {

@@ -1,9 +1,6 @@
 #pragma once
 
 #include <expected>
-#include <variant>
-
-#include <magic_enum/magic_enum.hpp>
 
 #include <poc.core/types.hpp>
 #include <poc.item/item.builder.hpp>

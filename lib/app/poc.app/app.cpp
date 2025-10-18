@@ -10,7 +10,7 @@ namespace poc {
 
 namespace {
 
-auto fail(string_view where) -> bool
+auto fail(string_view where [[maybe_unused]]) -> bool
 {
     POC_ERROR("Failed to initialize {}", where);
     return false;

@@ -1,45 +1,37 @@
 #pragma once
 
-#include <concepts>
-
 #include <poc.core/types.hpp>
+#include <poc.workspace/context.hpp>
 
-namespace poc::workspace::extension {
+namespace poc::workspace {
 
-// The host will fail to initialize the extension if it returns anything other than success.
-enum class init_result
-{
-    success,
+using extension_id = poc::string_view;
 
-    failure,
-    dependency_missing
-};
-
-class init_context
+class extension
 {
 public:
-    template<typename T>
-    requires std::derived_from<T, extension>
-    auto find_extension() -> extension*;
-    auto find_extension(string_view id) -> extension*;
-};
+    using id_type = extension_id;
 
-class update_context
-{
-public:
-};
+    // The host will fail to initialize the extension if it returns anything other than success.
+    enum class init_result
+    {
+        success,
 
-class interface
-{
-public:
-    static constexpr string_view id = "extension";
+        failure,
+        dependency_missing
+    };
 
-    virtual ~interface() = default;
+    using init_context = workspace::init_context;
+    using update_context = workspace::update_context;
 
-    virtual auto id() const -> string_view = 0;
+    static constexpr id_type static_id = "extension";
+
+    virtual ~extension() = default;
+
+    virtual auto id() const -> id_type = 0;
 
     virtual auto init(init_context& context) -> init_result = 0;
     virtual auto update(update_context& context) -> void = 0;
 };
 
-} // namespace poc::workspace::extension
+} // namespace poc::workspace

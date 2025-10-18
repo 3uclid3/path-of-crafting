@@ -1,4 +1,4 @@
-#include <poc.gui.core/render.hpp>
+#include <poc.gui.core/draw.hpp>
 
 #include <imgui.h>
 
@@ -9,7 +9,7 @@ auto new_frame() -> void
     ImGui::NewFrame();
 }
 
-auto render() -> void
+auto end_frame() -> void
 {
     ImGui::Render();
 }

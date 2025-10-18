@@ -19,6 +19,7 @@ add_rules("plugin.compile_commands.autoupdate", { outputdir = "$(builddir)" })
 
 includes(
     "app",
+    "extensions",
     "lib",
     "tests"
 )

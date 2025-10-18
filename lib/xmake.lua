@@ -1,4 +1,5 @@
 includes(
+    "app",
     "core",
     "gui",
     "item",

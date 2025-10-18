@@ -1,49 +1,32 @@
-#include <poc.core/log.hpp>
-#include <poc.core/utility/on_scope_exit.hpp>
-#include <poc.gui.backend.sdl3_opengl/init.hpp>
-#include <poc.gui.backend.sdl3_opengl/render.hpp>
-#include <poc.gui.core/demo.hpp>
-#include <poc.gui.core/init.hpp>
-#include <poc.gui.core/render.hpp>
-#include <poc.platform/clipboard_text_watcher.hpp>
-#include <poc.platform/window.hpp>
+#include <poc.app/app.hpp>
+#include <poc.gui.demo/extension.hpp>
+
+namespace poc {
+
+auto create_options() -> app_options
+{
+    app_options options{
+        .name = "Path of Crafting",
+    };
+    return options;
+}
+
+auto add_extensions(app& app) -> void
+{
+    app.add_extension<gui::demo::extension>();
+}
+
+} // namespace poc
 
 auto main() -> int
 {
-    using namespace poc;
+    poc::app app{poc::create_options()};
+    poc::add_extensions(app);
 
-    log::init();
-    on_scope_exit log_uninit{log::uninit};
-
-    platform::window window("Path of Crafting", 1280, 720);
-
-    if (!window.is_open())
-        return -1;
-
-    gui::init();
-    on_scope_exit gui_uninit{gui::uninit};
-
-    gui::backend::sdl3_opengl::init(window);
-    on_scope_exit gui_backend_uninit{gui::backend::sdl3_opengl::uninit};
-
-    platform::clipboard_text_watcher watcher(window, [](std::string_view text [[maybe_unused]]) {
-        POC_INFO("Clipboard text changed: {}", text);
-    });
-
-    while (window.is_open())
+    if (!app.init())
     {
-        window.poll_events();
-
-        gui::backend::sdl3_opengl::new_frame();
-
-        gui::new_frame();
-        gui::draw_demo();
-        gui::render();
-
-        window.clear();
-        gui::backend::sdl3_opengl::render();
-        window.present();
+        return -1;
     }
 
-    return 0;
+    return app.run();
 }

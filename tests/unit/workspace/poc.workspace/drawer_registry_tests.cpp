@@ -59,6 +59,19 @@ TEST_CASE_FIXTURE(fixture, "drawer_registry: add sorts drawers by priority")
     CHECK_EQ(calls, std::vector<drawer_id>{"low", "mid", "high"});
 }
 
+TEST_CASE_FIXTURE(fixture, "drawer_registry: add updates indices after priority insertion")
+{
+    REQUIRE(add_drawer("low", drawing_phase::main, draw_priority{-5}));
+    REQUIRE(add_drawer("high", drawing_phase::main, draw_priority{5}));
+    REQUIRE(add_drawer("mid", drawing_phase::main, draw_priority{0}));
+
+    CHECK(registry.remove("high"));
+
+    registry.draw_all(ctx);
+
+    CHECK_EQ(calls, std::vector<drawer_id>{"low", "mid"});
+}
+
 TEST_CASE_FIXTURE(fixture, "drawer_registry: remove updates indices and allows reinsertion")
 {
     REQUIRE(add_drawer("low", drawing_phase::main, draw_priority{-5}));

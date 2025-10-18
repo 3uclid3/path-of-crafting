@@ -31,6 +31,12 @@ auto drawer_registry::add(drawer_id id, drawer draw, drawing_phase phase, draw_p
     drawers.insert(drawers.begin() + index, std::move(draw));
     indexes[id] = index;
 
+    for (std::size_t i = index + 1; i < drawers.size(); ++i)
+    {
+        auto& meta = metas[i];
+        indexes[meta.id] = i;
+    }
+
     return true;
 }
 

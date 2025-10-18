@@ -5,7 +5,6 @@
 #include <poc.workspace/ingester.hpp>
 
 #include <chrono>
-#include <string_view>
 #include <thread>
 #include <vector>
 

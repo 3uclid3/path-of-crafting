@@ -1,5 +1,7 @@
 #pragma once
 
+#include <format>
+
 #include <poc.core/types.hpp>
 
 namespace poc {

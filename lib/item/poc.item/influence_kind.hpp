@@ -1,10 +1,9 @@
 #pragma once
 
-#include <cstdint>
 #include <format>
 
 #include <poc.core/types.hpp>
-#include <poc.core/utility/bitmask_enum.hpp>
+#include <poc.core/utility/bitmask.hpp>
 
 namespace poc {
 

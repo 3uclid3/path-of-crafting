@@ -1,10 +1,6 @@
 #pragma once
 
-#include <cstdint>
 #include <format>
-#include <variant>
-
-#include <magic_enum/magic_enum.hpp>
 
 #include <poc.core/container/static_vector.hpp>
 #include <poc.core/types.hpp>

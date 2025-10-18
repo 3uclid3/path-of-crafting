@@ -1,9 +1,10 @@
 #include <doctest/doctest.h>
 
-#include <poc.workspace/context.hpp>
 #include <poc.workspace/drawer_registry.hpp>
 
 #include <vector>
+
+#include <poc.workspace/context.hpp>
 
 namespace poc::workspace { namespace {
 

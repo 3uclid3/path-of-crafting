@@ -5,7 +5,6 @@
 #include <poc.core/types.hpp>
 
 namespace poc {
-
 namespace {
 
 template<typename T>

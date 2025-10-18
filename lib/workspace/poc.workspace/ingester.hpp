@@ -1,12 +1,12 @@
 #pragma once
 
-#include <atomic>
 #include <condition_variable>
 #include <deque>
 #include <mutex>
 #include <thread>
 #include <vector>
 
+#include <poc.item/item.hpp>
 #include <poc.item/item_blob.hpp>
 #include <poc.item/item_parser.hpp>
 

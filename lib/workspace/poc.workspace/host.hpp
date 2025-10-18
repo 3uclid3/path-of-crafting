@@ -31,8 +31,8 @@ public:
 
     template<typename T, typename... Args>
     requires std::derived_from<T, extension>
-    auto add_extension(Args&&... args) -> T*;
-    auto add_extension(std::unique_ptr<extension> ext) -> extension*;
+    auto add_extension(Args&&... args) -> T&;
+    auto add_extension(std::unique_ptr<extension> ext) -> extension&;
 
     template<typename T>
     requires std::derived_from<T, extension>
@@ -55,6 +55,7 @@ public:
     auto find_extension(extension_id id) -> extension*;
 
     auto ingester() noexcept -> ingester_type&;
+    auto store() noexcept -> store_type&;
 
 private:
     using sink_items = std::vector<item>;
@@ -77,9 +78,9 @@ private:
 
 template<typename T, typename... Args>
 requires std::derived_from<T, extension>
-auto host::add_extension(Args&&... args) -> T*
+auto host::add_extension(Args&&... args) -> T&
 {
-    return static_cast<T*>(add_extension(std::make_unique<T>(std::forward<Args>(args)...)));
+    return static_cast<T&>(add_extension(std::make_unique<T>(std::forward<Args>(args)...)));
 }
 
 template<typename T>
@@ -113,6 +114,11 @@ auto host::find_extension() -> T*
 inline auto host::ingester() noexcept -> ingester_type&
 {
     return _ingester;
+}
+
+inline auto host::store() noexcept -> store_type&
+{
+    return _store;
 }
 
 } // namespace poc::workspace

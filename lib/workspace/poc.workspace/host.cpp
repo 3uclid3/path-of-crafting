@@ -42,7 +42,7 @@ auto host::draw() -> void
     _drawers.draw_all(context);
 }
 
-auto host::add_extension(std::unique_ptr<extension> ext) -> extension*
+auto host::add_extension(std::unique_ptr<extension> ext) -> extension&
 {
     auto raw_ptr = ext.get();
 
@@ -53,7 +53,7 @@ auto host::add_extension(std::unique_ptr<extension> ext) -> extension*
     _extensions.push_back(raw_ptr);
     _extension_by_ids[raw_ptr->id()] = std::move(ext);
 
-    return raw_ptr;
+    return *raw_ptr;
 }
 
 auto host::remove_extension(extension_id id) -> bool

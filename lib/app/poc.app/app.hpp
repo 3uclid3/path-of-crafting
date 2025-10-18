@@ -31,7 +31,7 @@ public:
 
     template<typename T, typename... Args>
     requires std::derived_from<T, workspace::extension>
-    auto add_extension(Args&&... args) -> workspace::extension*;
+    auto add_extension(Args&&... args) -> workspace::extension&;
 
     auto init() -> bool;
     auto run() -> int;
@@ -53,7 +53,7 @@ private:
 
 template<typename T, typename... Args>
 requires std::derived_from<T, workspace::extension>
-auto app::add_extension(Args&&... args) -> workspace::extension*
+auto app::add_extension(Args&&... args) -> workspace::extension&
 {
     return _host.add_extension<T>(std::forward<Args>(args)...);
 }

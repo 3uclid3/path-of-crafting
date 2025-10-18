@@ -24,7 +24,7 @@ struct fixture
 
         std::size_t total = 0;
 
-        while (std::chrono::steady_clock::now() < deadline && out.size() < expected)
+        while (std::chrono::steady_clock::now() < deadline)
         {
             total += ingest.drain(out);
 

@@ -76,6 +76,6 @@ struct std::hash<poc::tagged<T, Tag>>
 {
     auto operator()(const poc::tagged<T, Tag>& value) const noexcept -> std::size_t
     {
-        return std::hash<T>{}(value.get());
+        return std::hash<T>{}(value.underlying());
     }
 };

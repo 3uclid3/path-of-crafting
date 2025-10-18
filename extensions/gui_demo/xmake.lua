@@ -1,11 +1,10 @@
-target("poc.app")
+target("poc.gui_demo")
     set_kind("static")
     set_group("lib")
 
     set_default(false)
 
     add_deps(
-        "poc.core",
         "poc.gui.core",
         "poc.workspace"
     )

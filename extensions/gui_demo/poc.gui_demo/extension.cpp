@@ -1,8 +1,8 @@
-#include <poc.gui.demo/extension.hpp>
+#include <poc.gui_demo/extension.hpp>
 
 #include <poc.gui.core/demo.hpp>
 
-namespace poc::gui::demo {
+namespace poc::gui_demo {
 
 auto extension::id() const -> id_type
 {
@@ -11,7 +11,7 @@ auto extension::id() const -> id_type
 
 auto extension::init(init_context& context) -> init_result
 {
-    if (!context.add_drawer("poc.gui.demo", [](auto&) { draw_demo(); }))
+    if (!context.add_drawer("poc.gui.demo", [](auto&) { gui::draw_demo(); }))
     {
         return init_result::failure;
     }
@@ -24,4 +24,4 @@ auto extension::update(update_context&) -> void
     // nothing to do
 }
 
-} // namespace poc::gui::demo
+} // namespace poc::gui_demo

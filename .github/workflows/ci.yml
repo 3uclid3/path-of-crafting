@@ -31,6 +31,15 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@v4
+        
+      - name: Cache xmake packages (xrepo)
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~/.xmake
+          key: xmake-${{ runner.os }}-${{ hashFiles('**/xmake.lua', '**/xmake-requires.lock') }}
+          restore-keys: |
+            xmake-${{ runner.os }}-
 
       - name: Configure
         run: xmake f -m ${{ matrix.build_type }} -y

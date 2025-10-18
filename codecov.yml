@@ -26,10 +26,6 @@ component_management:
       - type: project
         target: auto    
   individual_components:
-    - component_id: poc_app
-      name: app
-      paths:
-        - lib/app/**
     - component_id: poc_core
       name: core
       paths:
@@ -45,5 +41,6 @@ component_management:
 
 ignore:
   - "extensions/gui.demo/**"
+  - "lib/app/**"
   - "lib/gui/**"
   - "lib/platform/**"

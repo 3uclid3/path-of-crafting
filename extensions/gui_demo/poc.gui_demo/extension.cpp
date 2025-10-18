@@ -11,7 +11,7 @@ auto extension::id() const -> id_type
 
 auto extension::init(init_context& context) -> init_result
 {
-    if (!context.add_drawer("poc.gui.demo", [](auto&) { gui::draw_demo(); }))
+    if (!context.add_drawer(static_id, [](auto&) { gui::draw_demo(); }))
     {
         return init_result::failure;
     }

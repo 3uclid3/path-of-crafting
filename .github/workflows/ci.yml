@@ -131,7 +131,7 @@ jobs:
         if: always()
         uses: codecov/test-results-action@v1
         with:
-          files: build/*.junit.xml
+          files: ${{ github.workspace }}/build/*.junit.xml
           flags: unit-tests-windows-${{ matrix.build_type }}
           fail_ci_if_error: false
           token: ${{ secrets.CODECOV_TOKEN }}

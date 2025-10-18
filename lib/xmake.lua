@@ -1,3 +1,6 @@
 includes(
-    "core"
+    "core",
+    "gui",
+    "item",
+    "platform"
 )

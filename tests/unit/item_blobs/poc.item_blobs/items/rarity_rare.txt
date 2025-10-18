@@ -1,0 +1,34 @@
+R"ITEM(
+Item Class: Wands
+Rarity: Rare
+Blight Goad
+Convening Wand
+--------
+Wand
+Physical Damage: 33-60 (augmented)
+Critical Strike Chance: 8.30%
+Attacks per Second: 1.50
+--------
+Requirements:
+Level: 50
+Int: 183 (unmet)
+--------
+Sockets: B 
+--------
+Item Level: 57
+--------
+{ Implicit Modifier — Damage, Minion }
+Minions deal 23(20-24)% increased Damage (implicit)
+--------
+{ Prefix Modifier "Duke's" (Tier: 3) — Mana, Minion }
++35(34-37) to maximum Mana
+Minions deal 26(25-29)% increased Damage
+{ Prefix Modifier "Polished" (Tier: 7) — Damage, Physical, Attack }
+Adds 8(6-9) to 13(13-15) Physical Damage
+{ Suffix Modifier "of Triumph" (Tier: 4) — Life }
+Gain 31(24-32) Life per Enemy Killed
+{ Suffix Modifier "of the Throng" (Tier: 4) — Damage, Minion, Critical }
+Minions have +24(20-24)% to Critical Strike Multiplier
+{ Suffix Modifier "of Rime" (Tier: 3) — Damage, Elemental, Cold }
+19(19-22)% increased Cold Damage
+)ITEM"

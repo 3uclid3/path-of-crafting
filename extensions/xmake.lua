@@ -1,3 +1,4 @@
 includes(
-    "gui.demo"
+    -- Debug
+    "gui_demo"
 )

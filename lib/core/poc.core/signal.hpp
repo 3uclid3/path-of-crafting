@@ -221,8 +221,8 @@ public:
 
     basic_signal_connector() noexcept = default;
 
-    basic_signal_connector(basic_signal_connector&&) noexcept;
-    auto operator=(basic_signal_connector&&) noexcept -> basic_signal_connector&;
+    basic_signal_connector(basic_signal_connector&&) noexcept = default;
+    auto operator=(basic_signal_connector&&) noexcept -> basic_signal_connector& = default;
 
     basic_signal_connector(const basic_signal_connector&) = delete;
     auto operator=(const basic_signal_connector&) -> basic_signal_connector& = delete;

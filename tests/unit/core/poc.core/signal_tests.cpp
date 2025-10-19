@@ -6,12 +6,58 @@
 
 namespace poc { namespace {
 
+struct object
+{
+    auto set_value(int v) -> void
+    {
+        value = v;
+    }
+
+    int value{0};
+};
+
 TEST_CASE("basic_inplace_signal: empty")
 {
     inplace_signal<1, int> signal;
 
     CHECK(signal.empty());
     CHECK_EQ(signal.size(), 0);
+}
+
+TEST_CASE("basic_signal_connector: connect using object pointer")
+{
+    inplace_signal<1, int> signal;
+    object obj;
+
+    auto connection = signal.connector().connect(&obj, &object::set_value);
+
+    CHECK(connection.is_connected());
+    CHECK_EQ(signal.size(), 1);
+
+    signal.emit(13);
+    CHECK_EQ(obj.value, 13);
+
+    connection.disconnect();
+    CHECK_FALSE(connection.is_connected());
+    CHECK(signal.empty());
+}
+
+TEST_CASE("basic_signal_connector: connect using object reference")
+{
+    inplace_signal<1, int> signal;
+    object obj;
+
+    auto connection = signal.connector().connect(obj, &object::set_value);
+
+    CHECK(connection.is_connected());
+    CHECK_EQ(signal.size(), 1);
+
+    signal.emit(27);
+    CHECK_EQ(obj.value, 27);
+
+    connection.disconnect();
+    CHECK_FALSE(connection.is_connected());
+    CHECK(signal.empty());
 }
 
 TEST_CASE("basic_inplace_signal: zero inplace capacity migrates to heap immediately")

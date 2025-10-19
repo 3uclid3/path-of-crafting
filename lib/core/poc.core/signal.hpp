@@ -405,8 +405,6 @@ template<std::size_t InplaceSize, typename Allocator, typename... Args>
 template<typename T>
 auto basic_signal_connector<basic_inplace_signal<InplaceSize, Allocator, Args...>>::connect(T& obj, auto (T::*mf)(Args...)) -> connection_type
 {
-    POC_ASSERT(obj != nullptr);
-
     return connect([&obj, mf](Args... call_args) {
         std::invoke(mf, obj, call_args...);
     });
@@ -416,8 +414,6 @@ template<std::size_t InplaceSize, typename Allocator, typename... Args>
 template<typename T>
 auto basic_signal_connector<basic_inplace_signal<InplaceSize, Allocator, Args...>>::connect(const T& obj, auto (T::*mf)(Args...) const) -> connection_type
 {
-    POC_ASSERT(obj != nullptr);
-
     return connect([&obj, mf](Args... call_args) {
         std::invoke(mf, obj, call_args...);
     });

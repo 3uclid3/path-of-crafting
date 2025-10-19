@@ -136,14 +136,14 @@ auto item_repository::empty() const noexcept -> bool
     return size() == 0;
 }
 
-auto item_repository::added() noexcept -> added_signal&
+auto item_repository::added() noexcept -> added_signal::connector_type
 {
-    return _added;
+    return _added.connector();
 }
 
-auto item_repository::removed() noexcept -> removed_signal&
+auto item_repository::removed() noexcept -> removed_signal::connector_type
 {
-    return _removed;
+    return _removed.connector();
 }
 
 } // namespace poc::workspace

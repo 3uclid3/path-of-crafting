@@ -41,7 +41,7 @@ public:
     [[nodiscard]] auto begin() const noexcept -> const_iterator;
     [[nodiscard]] auto end() const noexcept -> const_iterator;
 
-    [[nodiscard]] auto changed() noexcept -> changed_signal&;
+    [[nodiscard]] auto changed() noexcept -> changed_signal::connector_type;
 
 private:
     auto add_and_emit(value_type value) -> void;

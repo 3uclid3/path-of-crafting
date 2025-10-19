@@ -142,9 +142,9 @@ auto selection::end() const noexcept -> const_iterator
     return _items.end();
 }
 
-auto selection::changed() noexcept -> changed_signal&
+auto selection::changed() noexcept -> changed_signal::connector_type
 {
-    return _changed;
+    return _changed.connector();
 }
 
 auto selection::add_and_emit(value_type value) -> void

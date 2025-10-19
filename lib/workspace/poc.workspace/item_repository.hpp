@@ -48,8 +48,8 @@ public:
     [[nodiscard]] auto size() const noexcept -> size_type;
     [[nodiscard]] auto empty() const noexcept -> bool;
 
-    [[nodiscard]] auto added() noexcept -> added_signal&;
-    [[nodiscard]] auto removed() noexcept -> removed_signal&;
+    [[nodiscard]] auto added() noexcept -> added_signal::connector_type;
+    [[nodiscard]] auto removed() noexcept -> removed_signal::connector_type;
 
 private:
     using slot_type = item_id;

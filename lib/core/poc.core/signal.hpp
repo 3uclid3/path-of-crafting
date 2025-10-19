@@ -9,6 +9,7 @@
 #include <utility>
 
 #include <poc.core/assert.hpp>
+#include <poc.core/def.hpp>
 
 namespace poc {
 
@@ -19,75 +20,57 @@ namespace poc {
 //
 // Notes: Cannot be moved if there are connected slots.
 //        Slot storage is fixed-size (48 bytes) and must be large enough for callables.
-template<std::size_t InplaceSize, class Allocator, class... Args>
+template<std::size_t InplaceSize, typename Allocator, typename... Args>
 class basic_inplace_signal;
 
-template<class... Args>
+template<typename Signal>
+class basic_signal_connection;
+
+template<typename Signal>
+class basic_signal_connector;
+
+template<typename Signal>
+class basic_signal_scoped_block;
+
+template<typename... Args>
 using signal = basic_inplace_signal<0, std::allocator<std::byte>, Args...>;
 
-template<std::size_t InplaceSize, class... Args>
+template<std::size_t InplaceSize, typename... Args>
 using inplace_signal = basic_inplace_signal<InplaceSize, std::allocator<std::byte>, Args...>;
 
-template<std::size_t InplaceSize, class Allocator, class... Args>
+template<typename T, std::size_t Size>
+struct basic_inplace_signal_buffer
+{
+    static constexpr std::size_t size = Size;
+
+    constexpr auto data() const noexcept -> const T*;
+    constexpr auto data() noexcept -> T*;
+
+    std::array<T, size> storage{};
+};
+
+template<typename T>
+struct basic_inplace_signal_buffer<T, 0>
+{
+    static constexpr std::size_t size = 0;
+
+    constexpr auto data() const noexcept -> const T*;
+    constexpr auto data() noexcept -> T*;
+};
+
+template<std::size_t InplaceSize, typename Allocator, typename... Args>
 class basic_inplace_signal
 {
 public:
-    using size_type = std::size_t;
     using allocator_type = typename std::allocator_traits<Allocator>::template rebind_alloc<std::byte>;
+    using connection_type = basic_signal_connection<basic_inplace_signal>;
+    using connector_type = basic_signal_connector<basic_inplace_signal>;
+    using scoped_block_type = basic_signal_scoped_block<basic_inplace_signal>;
+
+    using size_type = std::size_t;
 
     static constexpr std::size_t inplace_size{InplaceSize};
     static constexpr std::size_t inplace_slot_storage_size{48};
-
-    // Move-only handle; auto-disconnects on destruction
-    class connection
-    {
-    public:
-        connection() noexcept = default;
-        ~connection();
-
-        connection(connection&&) noexcept;
-        auto operator=(connection&&) noexcept -> connection&;
-
-        connection(const connection&) = delete;
-        auto operator=(const connection&) -> connection& = delete;
-
-        explicit operator bool() const noexcept;
-        auto is_connected() const noexcept -> bool;
-        auto disconnect() noexcept -> void;
-        auto release() noexcept -> void;          // give up ownership without disconnecting
-        auto index() const noexcept -> size_type; // stable slot index or npos
-
-    private:
-        friend class basic_inplace_signal;
-        static constexpr auto npos = static_cast<size_type>(-1);
-
-        connection(basic_inplace_signal* signal, size_type index) noexcept;
-
-        basic_inplace_signal* _signal = nullptr;
-        size_type _index = npos;
-    };
-
-    class scoped_block
-    {
-    public:
-        scoped_block() noexcept = default;
-        ~scoped_block();
-
-        scoped_block(scoped_block&& other) noexcept;
-        auto operator=(scoped_block&& other) noexcept -> scoped_block&;
-
-        scoped_block(const scoped_block&) = delete;
-        auto operator=(const scoped_block&) -> scoped_block& = delete;
-
-    private:
-        friend class basic_inplace_signal;
-
-        explicit scoped_block(basic_inplace_signal* signal) noexcept;
-
-        auto release() noexcept -> void;
-
-        basic_inplace_signal* _signal = nullptr;
-    };
 
 public:
     basic_inplace_signal() noexcept(std::is_nothrow_default_constructible_v<allocator_type>) = default;
@@ -101,15 +84,7 @@ public:
     basic_inplace_signal(const basic_inplace_signal&) = delete;
     auto operator=(const basic_inplace_signal&) -> basic_inplace_signal& = delete;
 
-    template<class F>
-    [[nodiscard]] auto connect(F&& f) -> connection;
-
-    template<class C>
-    [[nodiscard]] auto connect(C* obj, auto (C::*mf)(Args...)) -> connection;
-
-    template<class C>
-    [[nodiscard]] auto connect(const C* obj, auto (C::*mf)(Args...) const) -> connection;
-
+    [[nodiscard]] auto connector() noexcept -> connector_type;
     auto disconnect_all() noexcept -> void;
 
     auto emit(const std::decay_t<Args>&... args) -> void;
@@ -124,7 +99,7 @@ public:
     auto is_heap() const noexcept -> bool;
 
     auto blocked() const noexcept -> bool;
-    auto block() noexcept -> scoped_block;
+    auto block() noexcept -> scoped_block_type;
 
     auto get_allocator() const noexcept -> allocator_type;
 
@@ -147,19 +122,22 @@ private:
         alignas(std::max_align_t) std::array<std::byte, inplace_slot_storage_size> storage{};
     };
 
-    template<class Fn>
+    template<typename Fn>
     static auto slot_invoke(void* storage, const std::decay_t<Args>&... call_args) -> void;
 
-    template<class Fn>
+    template<typename Fn>
     static auto slot_destroy(void* storage) -> void;
 
-    template<class Fn>
+    template<typename Fn>
     static auto slot_move(void* dst, void* src) -> void;
 
-    template<class Fn>
+    template<typename Fn>
     static auto slot_vtable_for() -> const slot_vtable*;
 
     // connection helpers
+    template<typename F>
+    [[nodiscard]] auto connect_impl(F&& f) -> connection_type;
+
     auto drop(size_type index) noexcept -> void;
     auto used(size_type index) const noexcept -> bool;
 
@@ -175,40 +153,167 @@ private:
     auto move_from(basic_inplace_signal& other) noexcept -> void;
 
 private:
+    using inplace_slots_type = basic_inplace_signal_buffer<slot, inplace_size>;
+    using inplace_useds_type = basic_inplace_signal_buffer<bool, inplace_size>;
+
     // allocate 1 buffer for slots and useds
-    allocator_type _allocator{};
+    POC_NO_UNIQUE_ADDRESS allocator_type _allocator{};
 
     // inplace storage
-    std::array<slot, inplace_size> _inplace_slots{};
-    std::array<bool, inplace_size> _inplace_useds{};
+    POC_NO_UNIQUE_ADDRESS inplace_slots_type _inplace_slots{};
+    POC_NO_UNIQUE_ADDRESS inplace_useds_type _inplace_useds{};
 
     // current storage (inplace or heap)
-    slot* _slots{inplace_size > 0 ? _inplace_slots.data() : nullptr};
-    bool* _useds{inplace_size > 0 ? _inplace_useds.data() : nullptr};
+    slot* _slots{_inplace_slots.data()};
+    bool* _useds{_inplace_useds.data()};
 
     size_type _added_size{0};     // includes disconnected slots
     size_type _connected_size{0}; // currently connected slots
     size_type _heap_capacity{0};  // 0 if using inplace storage
     size_type _block_count{0};
 
+    friend connection_type;
+    friend connector_type;
+    friend scoped_block_type;
+
     static_assert((!std::is_rvalue_reference_v<Args> && ...), "basic_inplace_signal does not support T&& listener parameter types");
 };
 
-template<std::size_t InplaceSize, class Allocator, class... Args>
-basic_inplace_signal<InplaceSize, Allocator, Args...>::connection::~connection()
+template<std::size_t InplaceSize, typename Allocator, typename... Args>
+class basic_signal_connection<basic_inplace_signal<InplaceSize, Allocator, Args...>>
+{
+public:
+    using signal_type = basic_inplace_signal<InplaceSize, Allocator, Args...>;
+    using size_type = typename signal_type::size_type;
+
+    basic_signal_connection() noexcept = default;
+    ~basic_signal_connection();
+
+    basic_signal_connection(basic_signal_connection&&) noexcept;
+    auto operator=(basic_signal_connection&&) noexcept -> basic_signal_connection&;
+
+    basic_signal_connection(const basic_signal_connection&) = delete;
+    auto operator=(const basic_signal_connection&) -> basic_signal_connection& = delete;
+
+    explicit operator bool() const noexcept;
+    auto is_connected() const noexcept -> bool;
+    auto disconnect() noexcept -> void;
+    auto release() noexcept -> void;          // give up ownership without disconnecting
+    auto index() const noexcept -> size_type; // stable slot index or npos
+
+private:
+    static constexpr auto npos = static_cast<size_type>(-1);
+
+    basic_signal_connection(signal_type* signal, size_type index) noexcept;
+
+    signal_type* _signal{nullptr};
+    size_type _index{npos};
+
+    friend signal_type;
+};
+
+template<std::size_t InplaceSize, typename Allocator, typename... Args>
+class basic_signal_connector<basic_inplace_signal<InplaceSize, Allocator, Args...>>
+{
+public:
+    using signal_type = basic_inplace_signal<InplaceSize, Allocator, Args...>;
+    using connection_type = typename signal_type::connection_type;
+
+    basic_signal_connector() noexcept = default;
+
+    basic_signal_connector(basic_signal_connector&&) noexcept = default;
+    auto operator=(basic_signal_connector&&) noexcept -> basic_signal_connector& = default;
+
+    basic_signal_connector(const basic_signal_connector&) = delete;
+    auto operator=(const basic_signal_connector&) -> basic_signal_connector& = delete;
+
+    template<typename F>
+    [[nodiscard]] auto connect(F&& f) -> connection_type;
+
+    template<typename T>
+    [[nodiscard]] auto connect(T* obj, auto (T::*mf)(Args...)) -> connection_type;
+
+    template<typename T>
+    [[nodiscard]] auto connect(const T* obj, auto (T::*mf)(Args...) const) -> connection_type;
+
+    template<typename T>
+    [[nodiscard]] auto connect(T& obj, auto (T::*mf)(Args...)) -> connection_type;
+
+    template<typename T>
+    [[nodiscard]] auto connect(const T& obj, auto (T::*mf)(Args...) const) -> connection_type;
+
+private:
+    explicit basic_signal_connector(signal_type* signal) noexcept;
+
+    signal_type* _signal{nullptr};
+
+    friend signal_type;
+};
+
+template<std::size_t InplaceSize, typename Allocator, typename... Args>
+class basic_signal_scoped_block<basic_inplace_signal<InplaceSize, Allocator, Args...>>
+{
+public:
+    using signal_type = basic_inplace_signal<InplaceSize, Allocator, Args...>;
+
+    basic_signal_scoped_block() noexcept = default;
+    ~basic_signal_scoped_block();
+
+    basic_signal_scoped_block(basic_signal_scoped_block&& other) noexcept;
+    auto operator=(basic_signal_scoped_block&& other) noexcept -> basic_signal_scoped_block&;
+
+    basic_signal_scoped_block(const basic_signal_scoped_block&) = delete;
+    auto operator=(const basic_signal_scoped_block&) -> basic_signal_scoped_block& = delete;
+
+private:
+    explicit basic_signal_scoped_block(signal_type* signal) noexcept;
+
+    auto release() noexcept -> void;
+
+    signal_type* _signal = nullptr;
+
+    friend signal_type;
+};
+
+template<typename T, std::size_t Size>
+constexpr auto basic_inplace_signal_buffer<T, Size>::data() const noexcept -> const T*
+{
+    return storage.data();
+}
+
+template<typename T, std::size_t Size>
+constexpr auto basic_inplace_signal_buffer<T, Size>::data() noexcept -> T*
+{
+    return storage.data();
+}
+
+template<typename T>
+constexpr auto basic_inplace_signal_buffer<T, 0>::data() const noexcept -> const T*
+{
+    return nullptr;
+}
+
+template<typename T>
+constexpr auto basic_inplace_signal_buffer<T, 0>::data() noexcept -> T*
+{
+    return nullptr;
+}
+
+template<std::size_t InplaceSize, typename Allocator, typename... Args>
+basic_signal_connection<basic_inplace_signal<InplaceSize, Allocator, Args...>>::~basic_signal_connection()
 {
     disconnect();
 }
 
-template<std::size_t InplaceSize, class Allocator, class... Args>
-basic_inplace_signal<InplaceSize, Allocator, Args...>::connection::connection(connection&& other) noexcept
+template<std::size_t InplaceSize, typename Allocator, typename... Args>
+basic_signal_connection<basic_inplace_signal<InplaceSize, Allocator, Args...>>::basic_signal_connection(basic_signal_connection&& other) noexcept
     : _signal(std::exchange(other._signal, nullptr))
     , _index(std::exchange(other._index, npos))
 {
 }
 
-template<std::size_t InplaceSize, class Allocator, class... Args>
-auto basic_inplace_signal<InplaceSize, Allocator, Args...>::connection::operator=(connection&& other) noexcept -> connection&
+template<std::size_t InplaceSize, typename Allocator, typename... Args>
+auto basic_signal_connection<basic_inplace_signal<InplaceSize, Allocator, Args...>>::operator=(basic_signal_connection&& other) noexcept -> basic_signal_connection&
 {
     if (this != &other)
     {
@@ -221,20 +326,20 @@ auto basic_inplace_signal<InplaceSize, Allocator, Args...>::connection::operator
     return *this;
 }
 
-template<std::size_t InplaceSize, class Allocator, class... Args>
-basic_inplace_signal<InplaceSize, Allocator, Args...>::connection::operator bool() const noexcept
+template<std::size_t InplaceSize, typename Allocator, typename... Args>
+basic_signal_connection<basic_inplace_signal<InplaceSize, Allocator, Args...>>::operator bool() const noexcept
 {
     return is_connected();
 }
 
-template<std::size_t InplaceSize, class Allocator, class... Args>
-auto basic_inplace_signal<InplaceSize, Allocator, Args...>::connection::is_connected() const noexcept -> bool
+template<std::size_t InplaceSize, typename Allocator, typename... Args>
+auto basic_signal_connection<basic_inplace_signal<InplaceSize, Allocator, Args...>>::is_connected() const noexcept -> bool
 {
     return _signal != nullptr && _index != npos && _signal->used(_index);
 }
 
-template<std::size_t InplaceSize, class Allocator, class... Args>
-auto basic_inplace_signal<InplaceSize, Allocator, Args...>::connection::disconnect() noexcept -> void
+template<std::size_t InplaceSize, typename Allocator, typename... Args>
+auto basic_signal_connection<basic_inplace_signal<InplaceSize, Allocator, Args...>>::disconnect() noexcept -> void
 {
     if (_signal != nullptr)
     {
@@ -247,40 +352,93 @@ auto basic_inplace_signal<InplaceSize, Allocator, Args...>::connection::disconne
     }
 }
 
-template<std::size_t InplaceSize, class Allocator, class... Args>
-auto basic_inplace_signal<InplaceSize, Allocator, Args...>::connection::release() noexcept -> void
+template<std::size_t InplaceSize, typename Allocator, typename... Args>
+auto basic_signal_connection<basic_inplace_signal<InplaceSize, Allocator, Args...>>::release() noexcept -> void
 {
     _signal = nullptr;
     _index = npos;
 }
 
-template<std::size_t InplaceSize, class Allocator, class... Args>
-auto basic_inplace_signal<InplaceSize, Allocator, Args...>::connection::index() const noexcept -> size_type
+template<std::size_t InplaceSize, typename Allocator, typename... Args>
+auto basic_signal_connection<basic_inplace_signal<InplaceSize, Allocator, Args...>>::index() const noexcept -> size_type
 {
     return is_connected() ? _index : npos;
 }
 
-template<std::size_t InplaceSize, class Allocator, class... Args>
-basic_inplace_signal<InplaceSize, Allocator, Args...>::connection::connection(basic_inplace_signal* signal, size_type index) noexcept
+template<std::size_t InplaceSize, typename Allocator, typename... Args>
+basic_signal_connection<basic_inplace_signal<InplaceSize, Allocator, Args...>>::basic_signal_connection(signal_type* signal, size_type index) noexcept
     : _signal(signal)
     , _index(index)
 {
 }
 
-template<std::size_t InplaceSize, class Allocator, class... Args>
-basic_inplace_signal<InplaceSize, Allocator, Args...>::scoped_block::~scoped_block()
+template<std::size_t InplaceSize, typename Allocator, typename... Args>
+template<typename F>
+auto basic_signal_connector<basic_inplace_signal<InplaceSize, Allocator, Args...>>::connect(F&& f) -> connection_type
+{
+    return _signal->connect_impl(std::forward<F>(f));
+}
+
+template<std::size_t InplaceSize, typename Allocator, typename... Args>
+template<typename T>
+auto basic_signal_connector<basic_inplace_signal<InplaceSize, Allocator, Args...>>::connect(T* obj, auto (T::*mf)(Args...)) -> connection_type
+{
+    POC_ASSERT(obj != nullptr);
+
+    return connect([obj, mf](Args... call_args) {
+        std::invoke(mf, obj, call_args...);
+    });
+}
+
+template<std::size_t InplaceSize, typename Allocator, typename... Args>
+template<typename T>
+auto basic_signal_connector<basic_inplace_signal<InplaceSize, Allocator, Args...>>::connect(const T* obj, auto (T::*mf)(Args...) const) -> connection_type
+{
+    POC_ASSERT(obj != nullptr);
+
+    return connect([obj, mf](Args... call_args) {
+        std::invoke(mf, obj, call_args...);
+    });
+}
+
+template<std::size_t InplaceSize, typename Allocator, typename... Args>
+template<typename T>
+auto basic_signal_connector<basic_inplace_signal<InplaceSize, Allocator, Args...>>::connect(T& obj, auto (T::*mf)(Args...)) -> connection_type
+{
+    return connect([&obj, mf](Args... call_args) {
+        std::invoke(mf, obj, call_args...);
+    });
+}
+
+template<std::size_t InplaceSize, typename Allocator, typename... Args>
+template<typename T>
+auto basic_signal_connector<basic_inplace_signal<InplaceSize, Allocator, Args...>>::connect(const T& obj, auto (T::*mf)(Args...) const) -> connection_type
+{
+    return connect([&obj, mf](Args... call_args) {
+        std::invoke(mf, obj, call_args...);
+    });
+}
+
+template<std::size_t InplaceSize, typename Allocator, typename... Args>
+basic_signal_connector<basic_inplace_signal<InplaceSize, Allocator, Args...>>::basic_signal_connector(signal_type* signal) noexcept
+    : _signal(signal)
+{
+}
+
+template<std::size_t InplaceSize, typename Allocator, typename... Args>
+basic_signal_scoped_block<basic_inplace_signal<InplaceSize, Allocator, Args...>>::~basic_signal_scoped_block()
 {
     release();
 }
 
-template<std::size_t InplaceSize, class Allocator, class... Args>
-basic_inplace_signal<InplaceSize, Allocator, Args...>::scoped_block::scoped_block(scoped_block&& other) noexcept
+template<std::size_t InplaceSize, typename Allocator, typename... Args>
+basic_signal_scoped_block<basic_inplace_signal<InplaceSize, Allocator, Args...>>::basic_signal_scoped_block(basic_signal_scoped_block&& other) noexcept
     : _signal(std::exchange(other._signal, nullptr))
 {
 }
 
-template<std::size_t InplaceSize, class Allocator, class... Args>
-auto basic_inplace_signal<InplaceSize, Allocator, Args...>::scoped_block::operator=(scoped_block&& other) noexcept -> scoped_block&
+template<std::size_t InplaceSize, typename Allocator, typename... Args>
+auto basic_signal_scoped_block<basic_inplace_signal<InplaceSize, Allocator, Args...>>::operator=(basic_signal_scoped_block&& other) noexcept -> basic_signal_scoped_block&
 {
     if (this != &other)
     {
@@ -291,14 +449,14 @@ auto basic_inplace_signal<InplaceSize, Allocator, Args...>::scoped_block::operat
     return *this;
 }
 
-template<std::size_t InplaceSize, class Allocator, class... Args>
-basic_inplace_signal<InplaceSize, Allocator, Args...>::scoped_block::scoped_block(basic_inplace_signal* signal) noexcept
+template<std::size_t InplaceSize, typename Allocator, typename... Args>
+basic_signal_scoped_block<basic_inplace_signal<InplaceSize, Allocator, Args...>>::basic_signal_scoped_block(signal_type* signal) noexcept
     : _signal(signal)
 {
 }
 
-template<std::size_t InplaceSize, class Allocator, class... Args>
-auto basic_inplace_signal<InplaceSize, Allocator, Args...>::scoped_block::release() noexcept -> void
+template<std::size_t InplaceSize, typename Allocator, typename... Args>
+auto basic_signal_scoped_block<basic_inplace_signal<InplaceSize, Allocator, Args...>>::release() noexcept -> void
 {
     if (_signal != nullptr)
     {
@@ -307,13 +465,13 @@ auto basic_inplace_signal<InplaceSize, Allocator, Args...>::scoped_block::releas
     }
 }
 
-template<std::size_t InplaceSize, class Allocator, class... Args>
+template<std::size_t InplaceSize, typename Allocator, typename... Args>
 basic_inplace_signal<InplaceSize, Allocator, Args...>::basic_inplace_signal(const allocator_type& alloc) noexcept
     : _allocator(alloc)
 {
 }
 
-template<std::size_t InplaceSize, class Allocator, class... Args>
+template<std::size_t InplaceSize, typename Allocator, typename... Args>
 basic_inplace_signal<InplaceSize, Allocator, Args...>::~basic_inplace_signal()
 {
     POC_ASSERT(_connected_size == 0);
@@ -321,13 +479,13 @@ basic_inplace_signal<InplaceSize, Allocator, Args...>::~basic_inplace_signal()
     reset();
 }
 
-template<std::size_t InplaceSize, class Allocator, class... Args>
+template<std::size_t InplaceSize, typename Allocator, typename... Args>
 basic_inplace_signal<InplaceSize, Allocator, Args...>::basic_inplace_signal(basic_inplace_signal&& other) noexcept
 {
     move_from(other);
 }
 
-template<std::size_t InplaceSize, class Allocator, class... Args>
+template<std::size_t InplaceSize, typename Allocator, typename... Args>
 auto basic_inplace_signal<InplaceSize, Allocator, Args...>::operator=(basic_inplace_signal&& other) noexcept -> basic_inplace_signal&
 {
     if (this != &other)
@@ -340,9 +498,170 @@ auto basic_inplace_signal<InplaceSize, Allocator, Args...>::operator=(basic_inpl
     return *this;
 }
 
-template<std::size_t InplaceSize, class Allocator, class... Args>
-template<class F>
-auto basic_inplace_signal<InplaceSize, Allocator, Args...>::connect(F&& f) -> connection
+template<std::size_t InplaceSize, typename Allocator, typename... Args>
+auto basic_inplace_signal<InplaceSize, Allocator, Args...>::connector() noexcept -> connector_type
+{
+    return connector_type(this);
+}
+
+template<std::size_t InplaceSize, typename Allocator, typename... Args>
+auto basic_inplace_signal<InplaceSize, Allocator, Args...>::disconnect_all() noexcept -> void
+{
+    for (size_type i = 0; i < _added_size; ++i)
+    {
+        if (_useds[i])
+        {
+            if (auto& slot = _slots[i]; slot.vtable != nullptr)
+            {
+                slot.vtable->destroy(&slot.storage);
+                slot.vtable = nullptr;
+            }
+            _useds[i] = false;
+        }
+    }
+
+    _connected_size = 0;
+    _added_size = 0;
+}
+
+template<std::size_t InplaceSize, typename Allocator, typename... Args>
+auto basic_inplace_signal<InplaceSize, Allocator, Args...>::emit(const std::decay_t<Args>&... args) -> void
+{
+    if (empty() || blocked())
+    {
+        return;
+    }
+
+    for (size_type i = 0, size = _added_size; i < size; ++i)
+    {
+        if (used(i))
+        {
+            auto& slot = _slots[i];
+            slot.vtable->invoke(&slot.storage, args...);
+        }
+    }
+}
+
+template<std::size_t InplaceSize, typename Allocator, typename... Args>
+auto basic_inplace_signal<InplaceSize, Allocator, Args...>::operator()(const std::decay_t<Args>&... args) -> void
+{
+    emit(args...);
+}
+
+template<std::size_t InplaceSize, typename Allocator, typename... Args>
+auto basic_inplace_signal<InplaceSize, Allocator, Args...>::reset() noexcept -> void
+{
+    disconnect_all();
+
+    if (is_heap())
+    {
+        std::destroy_n(_slots, _heap_capacity);
+        auto raw = reinterpret_cast<std::byte*>(_slots);
+        std::allocator_traits<allocator_type>::deallocate(_allocator, raw, allocation_size(_heap_capacity));
+    }
+
+    _heap_capacity = 0;
+    _slots = _inplace_slots.data();
+    _useds = _inplace_useds.data();
+
+    if constexpr (inplace_size > 0)
+    {
+        std::fill(_useds, _useds + inplace_size, false);
+
+        for (size_type i = 0; i < inplace_size; ++i)
+        {
+            _slots[i].vtable = nullptr;
+        }
+    }
+
+    _added_size = 0;
+    _connected_size = 0;
+    _block_count = 0;
+}
+
+template<std::size_t InplaceSize, typename Allocator, typename... Args>
+auto basic_inplace_signal<InplaceSize, Allocator, Args...>::reserve(size_type n) -> void
+{
+    ensure_capacity(n);
+}
+
+template<std::size_t InplaceSize, typename Allocator, typename... Args>
+auto basic_inplace_signal<InplaceSize, Allocator, Args...>::empty() const noexcept -> bool
+{
+    return _connected_size == 0;
+}
+
+template<std::size_t InplaceSize, typename Allocator, typename... Args>
+auto basic_inplace_signal<InplaceSize, Allocator, Args...>::size() const noexcept -> size_type
+{
+    return _connected_size;
+}
+
+template<std::size_t InplaceSize, typename Allocator, typename... Args>
+auto basic_inplace_signal<InplaceSize, Allocator, Args...>::capacity() const noexcept -> size_type
+{
+    return is_heap() ? _heap_capacity : inplace_size;
+}
+
+template<std::size_t InplaceSize, typename Allocator, typename... Args>
+auto basic_inplace_signal<InplaceSize, Allocator, Args...>::is_heap() const noexcept -> bool
+{
+    return _heap_capacity > 0;
+}
+
+template<std::size_t InplaceSize, typename Allocator, typename... Args>
+auto basic_inplace_signal<InplaceSize, Allocator, Args...>::blocked() const noexcept -> bool
+{
+    return _block_count > 0;
+}
+
+template<std::size_t InplaceSize, typename Allocator, typename... Args>
+auto basic_inplace_signal<InplaceSize, Allocator, Args...>::block() noexcept -> scoped_block_type
+{
+    begin_block();
+    return scoped_block_type(this);
+}
+
+template<std::size_t InplaceSize, typename Allocator, typename... Args>
+auto basic_inplace_signal<InplaceSize, Allocator, Args...>::get_allocator() const noexcept -> allocator_type
+{
+    return _allocator;
+}
+
+template<std::size_t InplaceSize, typename Allocator, typename... Args>
+template<typename Fn>
+auto basic_inplace_signal<InplaceSize, Allocator, Args...>::slot_invoke(void* storage, const std::decay_t<Args>&... call_args) -> void
+{
+    auto* fn = reinterpret_cast<Fn*>(storage);
+    std::invoke(*fn, call_args...);
+}
+
+template<std::size_t InplaceSize, typename Allocator, typename... Args>
+template<typename Fn>
+auto basic_inplace_signal<InplaceSize, Allocator, Args...>::slot_destroy(void* storage) -> void
+{
+    std::destroy_at(reinterpret_cast<Fn*>(storage));
+}
+
+template<std::size_t InplaceSize, typename Allocator, typename... Args>
+template<typename Fn>
+auto basic_inplace_signal<InplaceSize, Allocator, Args...>::slot_move(void* dst, void* src) -> void
+{
+    auto* src_fn = reinterpret_cast<Fn*>(src);
+    new (dst) Fn(std::move(*src_fn));
+}
+
+template<std::size_t InplaceSize, typename Allocator, typename... Args>
+template<typename Fn>
+auto basic_inplace_signal<InplaceSize, Allocator, Args...>::slot_vtable_for() -> const slot_vtable*
+{
+    static const slot_vtable table{&slot_invoke<Fn>, &slot_destroy<Fn>, &slot_move<Fn>};
+    return &table;
+}
+
+template<std::size_t InplaceSize, typename Allocator, typename... Args>
+template<typename F>
+auto basic_inplace_signal<InplaceSize, Allocator, Args...>::connect_impl(F&& f) -> connection_type
 {
     using Fn = std::decay_t<F>;
 
@@ -370,186 +689,10 @@ auto basic_inplace_signal<InplaceSize, Allocator, Args...>::connect(F&& f) -> co
     ++_connected_size;
     _added_size = std::max(_added_size, index + 1);
 
-    return connection(this, index);
+    return connection_type(this, index);
 }
 
-template<std::size_t InplaceSize, class Allocator, class... Args>
-template<class C>
-auto basic_inplace_signal<InplaceSize, Allocator, Args...>::connect(C* obj, auto (C::*mf)(Args...)) -> connection
-{
-    POC_ASSERT(obj != nullptr);
-
-    return connect([obj, mf](Args... call_args) {
-        std::invoke(mf, obj, call_args...);
-    });
-}
-
-template<std::size_t InplaceSize, class Allocator, class... Args>
-template<class C>
-auto basic_inplace_signal<InplaceSize, Allocator, Args...>::connect(const C* obj, auto (C::*mf)(Args...) const) -> connection
-{
-    POC_ASSERT(obj != nullptr);
-
-    return connect([obj, mf](Args... call_args) {
-        std::invoke(mf, obj, call_args...);
-    });
-}
-
-template<std::size_t InplaceSize, class Allocator, class... Args>
-auto basic_inplace_signal<InplaceSize, Allocator, Args...>::disconnect_all() noexcept -> void
-{
-    for (size_type i = 0; i < _added_size; ++i)
-    {
-        if (_useds[i])
-        {
-            if (auto& slot = _slots[i]; slot.vtable != nullptr)
-            {
-                slot.vtable->destroy(&slot.storage);
-                slot.vtable = nullptr;
-            }
-            _useds[i] = false;
-        }
-    }
-
-    _connected_size = 0;
-    _added_size = 0;
-}
-
-template<std::size_t InplaceSize, class Allocator, class... Args>
-auto basic_inplace_signal<InplaceSize, Allocator, Args...>::emit(const std::decay_t<Args>&... args) -> void
-{
-    if (empty() || blocked())
-    {
-        return;
-    }
-
-    for (size_type i = 0, size = _added_size; i < size; ++i)
-    {
-        if (used(i))
-        {
-            auto& slot = _slots[i];
-            slot.vtable->invoke(&slot.storage, args...);
-        }
-    }
-}
-
-template<std::size_t InplaceSize, class Allocator, class... Args>
-auto basic_inplace_signal<InplaceSize, Allocator, Args...>::operator()(const std::decay_t<Args>&... args) -> void
-{
-    emit(args...);
-}
-
-template<std::size_t InplaceSize, class Allocator, class... Args>
-auto basic_inplace_signal<InplaceSize, Allocator, Args...>::reset() noexcept -> void
-{
-    disconnect_all();
-
-    if (is_heap())
-    {
-        std::destroy_n(_slots, _heap_capacity);
-        auto raw = reinterpret_cast<std::byte*>(_slots);
-        std::allocator_traits<allocator_type>::deallocate(_allocator, raw, allocation_size(_heap_capacity));
-    }
-
-    _heap_capacity = 0;
-    _slots = inplace_size > 0 ? _inplace_slots.data() : nullptr;
-    _useds = inplace_size > 0 ? _inplace_useds.data() : nullptr;
-
-    if constexpr (inplace_size > 0)
-    {
-        std::fill(_inplace_useds.begin(), _inplace_useds.end(), false);
-        for (auto& slot : _inplace_slots)
-        {
-            slot.vtable = nullptr;
-        }
-    }
-
-    _added_size = 0;
-    _connected_size = 0;
-    _block_count = 0;
-}
-
-template<std::size_t InplaceSize, class Allocator, class... Args>
-auto basic_inplace_signal<InplaceSize, Allocator, Args...>::reserve(size_type n) -> void
-{
-    ensure_capacity(n);
-}
-
-template<std::size_t InplaceSize, class Allocator, class... Args>
-auto basic_inplace_signal<InplaceSize, Allocator, Args...>::empty() const noexcept -> bool
-{
-    return _connected_size == 0;
-}
-
-template<std::size_t InplaceSize, class Allocator, class... Args>
-auto basic_inplace_signal<InplaceSize, Allocator, Args...>::size() const noexcept -> size_type
-{
-    return _connected_size;
-}
-
-template<std::size_t InplaceSize, class Allocator, class... Args>
-auto basic_inplace_signal<InplaceSize, Allocator, Args...>::capacity() const noexcept -> size_type
-{
-    return is_heap() ? _heap_capacity : inplace_size;
-}
-
-template<std::size_t InplaceSize, class Allocator, class... Args>
-auto basic_inplace_signal<InplaceSize, Allocator, Args...>::is_heap() const noexcept -> bool
-{
-    return _heap_capacity > 0;
-}
-
-template<std::size_t InplaceSize, class Allocator, class... Args>
-auto basic_inplace_signal<InplaceSize, Allocator, Args...>::blocked() const noexcept -> bool
-{
-    return _block_count > 0;
-}
-
-template<std::size_t InplaceSize, class Allocator, class... Args>
-auto basic_inplace_signal<InplaceSize, Allocator, Args...>::block() noexcept -> scoped_block
-{
-    begin_block();
-    return scoped_block(this);
-}
-
-template<std::size_t InplaceSize, class Allocator, class... Args>
-auto basic_inplace_signal<InplaceSize, Allocator, Args...>::get_allocator() const noexcept -> allocator_type
-{
-    return _allocator;
-}
-
-template<std::size_t InplaceSize, class Allocator, class... Args>
-template<class Fn>
-auto basic_inplace_signal<InplaceSize, Allocator, Args...>::slot_invoke(void* storage, const std::decay_t<Args>&... call_args) -> void
-{
-    auto* fn = reinterpret_cast<Fn*>(storage);
-    std::invoke(*fn, call_args...);
-}
-
-template<std::size_t InplaceSize, class Allocator, class... Args>
-template<class Fn>
-auto basic_inplace_signal<InplaceSize, Allocator, Args...>::slot_destroy(void* storage) -> void
-{
-    std::destroy_at(reinterpret_cast<Fn*>(storage));
-}
-
-template<std::size_t InplaceSize, class Allocator, class... Args>
-template<class Fn>
-auto basic_inplace_signal<InplaceSize, Allocator, Args...>::slot_move(void* dst, void* src) -> void
-{
-    auto* src_fn = reinterpret_cast<Fn*>(src);
-    new (dst) Fn(std::move(*src_fn));
-}
-
-template<std::size_t InplaceSize, class Allocator, class... Args>
-template<class Fn>
-auto basic_inplace_signal<InplaceSize, Allocator, Args...>::slot_vtable_for() -> const slot_vtable*
-{
-    static const slot_vtable table{&slot_invoke<Fn>, &slot_destroy<Fn>, &slot_move<Fn>};
-    return &table;
-}
-
-template<std::size_t InplaceSize, class Allocator, class... Args>
+template<std::size_t InplaceSize, typename Allocator, typename... Args>
 auto basic_inplace_signal<InplaceSize, Allocator, Args...>::drop(size_type index) noexcept -> void
 {
     POC_ASSERT(used(index));
@@ -567,13 +710,13 @@ auto basic_inplace_signal<InplaceSize, Allocator, Args...>::drop(size_type index
     compact_tail();
 }
 
-template<std::size_t InplaceSize, class Allocator, class... Args>
+template<std::size_t InplaceSize, typename Allocator, typename... Args>
 auto basic_inplace_signal<InplaceSize, Allocator, Args...>::used(size_type index) const noexcept -> bool
 {
     return _useds != nullptr && index < _added_size && _useds[index];
 }
 
-template<std::size_t InplaceSize, class Allocator, class... Args>
+template<std::size_t InplaceSize, typename Allocator, typename... Args>
 auto basic_inplace_signal<InplaceSize, Allocator, Args...>::ensure_capacity(size_type min_capacity) -> void
 {
     if (min_capacity == 0 || min_capacity <= capacity())
@@ -589,7 +732,7 @@ auto basic_inplace_signal<InplaceSize, Allocator, Args...>::ensure_capacity(size
     grow_heap(min_capacity);
 }
 
-template<std::size_t InplaceSize, class Allocator, class... Args>
+template<std::size_t InplaceSize, typename Allocator, typename... Args>
 auto basic_inplace_signal<InplaceSize, Allocator, Args...>::allocation_size(size_type cap) const noexcept -> size_type
 {
     const size_type slot_array_size = cap * sizeof(slot);
@@ -598,7 +741,7 @@ auto basic_inplace_signal<InplaceSize, Allocator, Args...>::allocation_size(size
     return bool_array_offset + cap * sizeof(bool);
 }
 
-template<std::size_t InplaceSize, class Allocator, class... Args>
+template<std::size_t InplaceSize, typename Allocator, typename... Args>
 auto basic_inplace_signal<InplaceSize, Allocator, Args...>::grow_heap(size_type min_new_cap) -> void
 {
     if (min_new_cap <= _heap_capacity)
@@ -665,21 +808,13 @@ auto basic_inplace_signal<InplaceSize, Allocator, Args...>::grow_heap(size_type 
         auto old_raw_mem = reinterpret_cast<std::byte*>(old_slots);
         std::allocator_traits<allocator_type>::deallocate(_allocator, old_raw_mem, allocation_size(old_heap_capacity));
     }
-    else if constexpr (inplace_size > 0)
-    {
-        for (size_type i = limit; i < inplace_size; ++i)
-        {
-            _inplace_useds[i] = false;
-            _inplace_slots[i].vtable = nullptr;
-        }
-    }
 
     _slots = new_slots;
     _useds = new_useds;
     _heap_capacity = new_cap;
 }
 
-template<std::size_t InplaceSize, class Allocator, class... Args>
+template<std::size_t InplaceSize, typename Allocator, typename... Args>
 auto basic_inplace_signal<InplaceSize, Allocator, Args...>::compact_tail() noexcept -> void
 {
     while (_added_size > 0 && !_useds[_added_size - 1])
@@ -688,26 +823,26 @@ auto basic_inplace_signal<InplaceSize, Allocator, Args...>::compact_tail() noexc
     }
 }
 
-template<std::size_t InplaceSize, class Allocator, class... Args>
+template<std::size_t InplaceSize, typename Allocator, typename... Args>
 auto basic_inplace_signal<InplaceSize, Allocator, Args...>::begin_block() noexcept -> void
 {
     ++_block_count;
 }
 
-template<std::size_t InplaceSize, class Allocator, class... Args>
+template<std::size_t InplaceSize, typename Allocator, typename... Args>
 auto basic_inplace_signal<InplaceSize, Allocator, Args...>::end_block() noexcept -> void
 {
     POC_ASSERT(_block_count > 0);
     --_block_count;
 }
 
-template<std::size_t InplaceSize, class Allocator, class... Args>
+template<std::size_t InplaceSize, typename Allocator, typename... Args>
 auto basic_inplace_signal<InplaceSize, Allocator, Args...>::can_move() const noexcept -> bool
 {
     return _connected_size == 0 && _block_count == 0;
 }
 
-template<std::size_t InplaceSize, class Allocator, class... Args>
+template<std::size_t InplaceSize, typename Allocator, typename... Args>
 auto basic_inplace_signal<InplaceSize, Allocator, Args...>::move_from(basic_inplace_signal& other) noexcept -> void
 {
     POC_ASSERT(this != &other);

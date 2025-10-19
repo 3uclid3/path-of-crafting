@@ -6,12 +6,44 @@
 
 namespace poc { namespace {
 
+struct object
+{
+    auto set_value(int v) -> void
+    {
+        value = v;
+    }
+
+    int value{0};
+};
+
 TEST_CASE("basic_inplace_signal: empty")
 {
     inplace_signal<1, int> signal;
 
     CHECK(signal.empty());
     CHECK_EQ(signal.size(), 0);
+}
+
+TEST_CASE("basic_signal_connector: connect using object pointer")
+{
+    inplace_signal<1, int> signal;
+    object obj;
+
+    auto connection = signal.connector().connect(&obj, &object::set_value);
+
+    signal.emit(13);
+    CHECK_EQ(obj.value, 13);
+}
+
+TEST_CASE("basic_signal_connector: connect using object reference")
+{
+    inplace_signal<1, int> signal;
+    object obj;
+
+    auto connection = signal.connector().connect(obj, &object::set_value);
+
+    signal.emit(27);
+    CHECK_EQ(obj.value, 27);
 }
 
 TEST_CASE("basic_inplace_signal: zero inplace capacity migrates to heap immediately")
@@ -23,7 +55,7 @@ TEST_CASE("basic_inplace_signal: zero inplace capacity migrates to heap immediat
     CHECK_FALSE(signal.is_heap());
 
     int tally = 0;
-    auto connection = signal.connect([&](int value) { tally += value; });
+    auto connection = signal.connector().connect([&](int value) { tally += value; });
 
     CHECK(signal.is_heap());
     CHECK_GE(signal.capacity(), 1);
@@ -47,7 +79,7 @@ TEST_CASE("basic_inplace_signal: emit forwards arguments to slots")
     inplace_signal<2, int> signal;
 
     int sum = 0;
-    auto connection = signal.connect([&](int value) { sum += value; });
+    auto connection = signal.connector().connect([&](int value) { sum += value; });
 
     signal.emit(5);
     CHECK_EQ(sum, 5);
@@ -64,7 +96,7 @@ TEST_CASE("basic_inplace_signal: connection destruction auto-disconnects")
     bool invoked = false;
 
     {
-        auto connection = signal.connect([&]() { invoked = true; });
+        auto connection = signal.connector().connect([&]() { invoked = true; });
         CHECK(connection.is_connected());
         CHECK_EQ(signal.size(), 1);
     }
@@ -78,7 +110,7 @@ TEST_CASE("basic_inplace_signal: scoped_block suppresses emission")
 {
     inplace_signal<1, int> signal;
     int observed = 0;
-    auto connection = signal.connect([&](int value) { observed = value; });
+    auto connection = signal.connector().connect([&](int value) { observed = value; });
 
     {
         auto guard = signal.block();
@@ -98,7 +130,7 @@ TEST_CASE("basic_inplace_signal: migrates to heap when inline capacity exceeded"
     std::vector<int> hits;
 
     auto make_slot = [&](int id) {
-        return signal.connect([&, id](int value) { hits.push_back(id * 10 + value); });
+        return signal.connector().connect([&, id](int value) { hits.push_back(id * 10 + value); });
     };
 
     auto c0 = make_slot(0);
@@ -122,7 +154,7 @@ TEST_CASE("basic_inplace_signal: connection release detaches handle but leaves s
     inplace_signal<1, int> signal;
     int sum = 0;
 
-    auto connection = signal.connect([&](int value) { sum += value; });
+    auto connection = signal.connector().connect([&](int value) { sum += value; });
     CHECK(connection.is_connected());
 
     connection.release();
@@ -141,15 +173,15 @@ TEST_CASE("basic_inplace_signal: slot can disconnect itself during emit")
     inplace_signal<2> signal;
     std::vector<int> hits;
 
-    typename decltype(signal)::connection self;
-    self = signal.connect([&]() {
+    inplace_signal<2>::connection_type self;
+    self = signal.connector().connect([&]() {
         hits.push_back(1);
         CHECK(self.is_connected());
         self.disconnect();
         CHECK_FALSE(self.is_connected());
     });
 
-    auto other = signal.connect([&]() { hits.push_back(2); });
+    auto other = signal.connector().connect([&]() { hits.push_back(2); });
 
     signal.emit();
 
@@ -166,13 +198,13 @@ TEST_CASE("basic_inplace_signal: slot can disconnect another slot during emit")
     inplace_signal<2> signal;
     std::vector<int> hits;
 
-    typename decltype(signal)::connection target;
-    auto dropper = signal.connect([&]() {
+    inplace_signal<2>::connection_type target;
+    auto dropper = signal.connector().connect([&]() {
         hits.push_back(1);
         target.disconnect();
     });
 
-    target = signal.connect([&]() { hits.push_back(2); });
+    target = signal.connector().connect([&]() { hits.push_back(2); });
 
     signal.emit();
 
@@ -189,13 +221,13 @@ TEST_CASE("basic_inplace_signal: disconnect_all can be invoked during emit")
     inplace_signal<3, int> signal;
     std::vector<int> hits;
 
-    auto first = signal.connect([&](int value) {
+    auto first = signal.connector().connect([&](int value) {
         hits.push_back(10 + value);
         signal.disconnect_all();
     });
 
-    auto second = signal.connect([&](int value) { hits.push_back(20 + value); });
-    auto third = signal.connect([&](int value) { hits.push_back(30 + value); });
+    auto second = signal.connector().connect([&](int value) { hits.push_back(20 + value); });
+    auto third = signal.connector().connect([&](int value) { hits.push_back(30 + value); });
 
     signal.emit(5);
 
@@ -210,8 +242,8 @@ TEST_CASE("basic_inplace_signal: disconnect_all preserves heap allocation until 
 {
     inplace_signal<1> signal;
 
-    auto c0 = signal.connect([]() {});
-    auto c1 = signal.connect([]() {});
+    auto c0 = signal.connector().connect([]() {});
+    auto c1 = signal.connector().connect([]() {});
 
     CHECK(signal.is_heap());
     CHECK_EQ(signal.size(), 2);
@@ -233,7 +265,7 @@ TEST_CASE("basic_inplace_signal: reserve preallocates heap capacity")
     CHECK_GE(signal.capacity(), 4);
 
     int observed = 0;
-    auto connection = signal.connect([&](int value) { observed += value; });
+    auto connection = signal.connector().connect([&](int value) { observed += value; });
 
     signal.emit(5);
     CHECK_EQ(observed, 5);
@@ -244,7 +276,7 @@ TEST_CASE("basic_inplace_signal: nested blocks stack correctly")
 {
     inplace_signal<1, int> signal;
     int tally = 0;
-    auto connection = signal.connect([&](int value) { tally += value; });
+    auto connection = signal.connector().connect([&](int value) { tally += value; });
 
     {
         auto outer = signal.block();
@@ -272,7 +304,7 @@ TEST_CASE("basic_inplace_signal: connection move transfers ownership")
     inplace_signal<1> signal;
     int invokes = 0;
 
-    auto original = signal.connect([&]() { ++invokes; });
+    auto original = signal.connector().connect([&]() { ++invokes; });
     CHECK(original.is_connected());
 
     auto moved = std::move(original);
@@ -306,13 +338,13 @@ TEST_CASE("basic_inplace_signal: move constructor transfers empty state")
     CHECK_EQ(source.capacity(), inplace_signal<2, int>::inplace_size);
     CHECK(source.empty());
 
-    auto moved_connection = moved.connect([&](int value) { moved_sum += value; });
+    auto moved_connection = moved.connector().connect([&](int value) { moved_sum += value; });
     moved.emit(3);
     CHECK_EQ(moved_sum, 3);
     moved_connection.disconnect();
     CHECK(moved.empty());
 
-    auto source_connection = source.connect([&](int value) { source_sum += value; });
+    auto source_connection = source.connector().connect([&](int value) { source_sum += value; });
     source.emit(5);
     CHECK_EQ(source_sum, 5);
     source_connection.disconnect();
@@ -344,7 +376,7 @@ TEST_CASE("basic_inplace_signal: move assignment transfers empty state")
     CHECK_EQ(source.capacity(), inplace_signal<2, int>::inplace_size);
     CHECK(source.empty());
 
-    auto connection = target.connect([&](int value) { target_sum += value; });
+    auto connection = target.connector().connect([&](int value) { target_sum += value; });
     target.emit(6);
     CHECK_EQ(target_sum, 6);
     target.emit(4);
@@ -354,7 +386,7 @@ TEST_CASE("basic_inplace_signal: move assignment transfers empty state")
 
     source.reserve(3);
     CHECK(source.is_heap());
-    auto source_connection = source.connect([&](int value) { source_sum += value; });
+    auto source_connection = source.connector().connect([&](int value) { source_sum += value; });
     source.emit(3);
     CHECK_EQ(source_sum, 3);
     source_connection.disconnect();

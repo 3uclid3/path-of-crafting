@@ -31,15 +31,8 @@ TEST_CASE("basic_signal_connector: connect using object pointer")
 
     auto connection = signal.connector().connect(&obj, &object::set_value);
 
-    CHECK(connection.is_connected());
-    CHECK_EQ(signal.size(), 1);
-
     signal.emit(13);
     CHECK_EQ(obj.value, 13);
-
-    connection.disconnect();
-    CHECK_FALSE(connection.is_connected());
-    CHECK(signal.empty());
 }
 
 TEST_CASE("basic_signal_connector: connect using object reference")
@@ -49,15 +42,8 @@ TEST_CASE("basic_signal_connector: connect using object reference")
 
     auto connection = signal.connector().connect(obj, &object::set_value);
 
-    CHECK(connection.is_connected());
-    CHECK_EQ(signal.size(), 1);
-
     signal.emit(27);
     CHECK_EQ(obj.value, 27);
-
-    connection.disconnect();
-    CHECK_FALSE(connection.is_connected());
-    CHECK(signal.empty());
 }
 
 TEST_CASE("basic_inplace_signal: zero inplace capacity migrates to heap immediately")

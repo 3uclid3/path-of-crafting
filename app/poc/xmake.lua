@@ -8,7 +8,7 @@ target("poc")
         -- Extensions
 
         -- Debug Extensions
-        "poc.gui_demo"
+        "poc.gui.debug"
     )
 
     add_files("main.cpp")

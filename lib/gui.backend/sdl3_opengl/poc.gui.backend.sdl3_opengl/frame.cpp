@@ -1,4 +1,4 @@
-#include <poc.gui.backend.sdl3_opengl/render.hpp>
+#include <poc.gui.backend.sdl3_opengl/frame.hpp>
 
 #include <imgui_impl_opengl3.h>
 #include <imgui_impl_sdl3.h>

@@ -2,6 +2,7 @@ includes(
     "app",
     "core",
     "gui",
+    "gui.backend",
     "item",
     "platform",
     "workspace"

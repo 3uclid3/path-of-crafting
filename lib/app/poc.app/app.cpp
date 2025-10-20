@@ -1,10 +1,11 @@
 #include <poc.app/app.hpp>
 
 #include <poc.core/log.hpp>
-#include <poc.gui.backend.sdl3_opengl/init.hpp>
-#include <poc.gui.backend.sdl3_opengl/render.hpp>
-#include <poc.gui.core/draw.hpp>
-#include <poc.gui.core/init.hpp>
+#include <poc.core/types.hpp>
+#include <poc.gui.backend/frame.hpp>
+#include <poc.gui.backend/setup.hpp>
+#include <poc.gui/frame.hpp>
+#include <poc.gui/setup.hpp>
 
 namespace poc {
 
@@ -48,8 +49,8 @@ auto app::init() -> bool
     gui::init();
     _guards.emplace_back(gui::uninit);
 
-    gui::backend::sdl3_opengl::init(*_window);
-    _guards.emplace_back(gui::backend::sdl3_opengl::uninit);
+    gui::backend::init(*_window);
+    _guards.emplace_back(gui::backend::uninit);
 
     // workspace
     if (!_host.init())
@@ -85,14 +86,14 @@ auto app::update() -> void
     _host.update();
 
     // gui building
-    gui::backend::sdl3_opengl::new_frame();
+    gui::backend::new_frame();
     gui::new_frame();
     _host.draw();
     gui::end_frame();
 
     // rendering
     _window->clear();
-    gui::backend::sdl3_opengl::render();
+    gui::backend::render();
     _window->present();
 }
 

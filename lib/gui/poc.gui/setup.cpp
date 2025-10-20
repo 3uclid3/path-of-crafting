@@ -1,4 +1,4 @@
-#include <poc.gui.core/init.hpp>
+#include <poc.gui/setup.hpp>
 
 #include <imgui.h>
 

@@ -1,7 +1,7 @@
 #include <poc.app/app.hpp>
 
 // Debug Extensions
-#include <poc.gui_demo/extension.hpp>
+#include <poc.gui.debug/extension.hpp>
 
 namespace poc {
 
@@ -15,7 +15,7 @@ auto create_options() -> app_options
 
 auto add_extensions(app& app) -> void
 {
-    app.add_extension<gui_demo::extension>();
+    app.add_extension<gui::debug::extension>();
 }
 
 } // namespace poc

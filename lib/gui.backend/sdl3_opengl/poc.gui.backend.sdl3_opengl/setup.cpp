@@ -1,4 +1,4 @@
-#include <poc.gui.backend.sdl3_opengl/init.hpp>
+#include <poc.gui.backend.sdl3_opengl/setup.hpp>
 
 #include <imgui_impl_opengl3.h>
 #include <imgui_impl_sdl3.h>

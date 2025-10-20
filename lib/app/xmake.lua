@@ -4,8 +4,8 @@ target("poc.app")
 
     add_deps(
         "poc.core",
-        "poc.gui.core",
-        "poc.gui.backend.sdl3_opengl",
+        "poc.gui",
+        "poc.gui.backend",
         "poc.item",
         "poc.platform",
         "poc.workspace",

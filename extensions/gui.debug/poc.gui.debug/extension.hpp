@@ -2,12 +2,12 @@
 
 #include <poc.workspace/extension.hpp>
 
-namespace poc::gui_demo {
+namespace poc::gui::debug {
 
 class extension final : public workspace::extension
 {
 public:
-    static constexpr id_type static_id = "poc.gui_demo";
+    static constexpr id_type static_id = "poc.gui.debug";
 
     auto id() const -> id_type override;
 
@@ -15,4 +15,4 @@ public:
     auto update(update_context& context) -> void override;
 };
 
-} // namespace poc::gui_demo
+} // namespace poc::gui::debug

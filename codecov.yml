@@ -40,7 +40,8 @@ component_management:
         - lib/workspace/**
 
 ignore:
-  - "extensions/gui.demo/**"
+  - "extensions/gui.debug/**"
   - "lib/app/**"
   - "lib/gui/**"
+  - "lib/gui.backend/**"
   - "lib/platform/**"

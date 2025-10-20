@@ -2,6 +2,7 @@
 
 #include <cstddef>
 #include <cstdint>
+#include <format>
 #include <string>
 #include <string_view>
 
@@ -33,6 +34,10 @@ using string_view = std::string_view;
 using string_slice = basic_string_slice<char>;
 using string_arena = basic_string_arena<char, default_string_arena_page_size>;
 using string_lease = string_arena::lease;
+
+template<typename... Args>
+using format_string = std::format_string<Args...>;
+using format_args = std::format_args;
 
 extern template class basic_string_arena<char, default_string_arena_page_size>;
 extern template class basic_string_slice<char>;

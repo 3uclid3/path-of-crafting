@@ -36,7 +36,7 @@ auto to_cstr(string_view sv) -> const char*
     return buffer.data();
 }
 
-auto format_cstr(string_view fmt, format_args args) -> const char*
+auto vformat_cstr(string_view fmt, format_args args) -> const char*
 {
     auto& buffer = next_buffer();
     buffer.clear();

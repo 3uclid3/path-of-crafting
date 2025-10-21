@@ -1,6 +1,5 @@
 #pragma once
 
-#include <functional>
 #include <unordered_map>
 #include <vector>
 
@@ -8,6 +7,7 @@
 #include <poc.core/assert.hpp>
 #include <poc.core/types.hpp>
 #include <poc.core/utility/always_false.hpp>
+#include <poc.core/utility/move_only_function.hpp>
 #include <poc.workspace/action.hpp>
 
 namespace poc::workspace {
@@ -27,8 +27,9 @@ private:
     // Binder receives a pointer to a T (the typed action), and must
     // return a closure that MOVES the action data immediately.
     using action_ptr = void*;
-    using action_executor = std::move_only_function<void(action_context&)>;
-    using action_binder = std::move_only_function<action_executor(action_ptr)>;
+
+    using action_executor = move_only_function<void(action_context&)>;
+    using action_binder = move_only_function<action_executor(action_ptr)>;
 
     struct action_entry
     {

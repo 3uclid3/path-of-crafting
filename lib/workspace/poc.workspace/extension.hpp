@@ -1,7 +1,5 @@
 #pragma once
 
-#include <functional>
-
 #include <poc.core/types.hpp>
 #include <poc.core/utility/crc32.hpp>
 #include <poc.core/utility/tagged.hpp>

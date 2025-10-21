@@ -45,6 +45,8 @@ private:
 template<typename Action, typename F>
 auto action_dispatcher::register_handler(F&& handler) -> bool
 {
+    POC_ASSERT(_in.empty() && _out.empty());
+
     using traits = action_traits<Action>;
 
     if (_binders.contains(traits::id))

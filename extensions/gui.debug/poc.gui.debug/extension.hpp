@@ -7,7 +7,7 @@ namespace poc::gui::debug {
 class extension final : public workspace::extension
 {
 public:
-    static constexpr id_type static_id = "poc.gui.debug";
+    static constexpr id_type static_id = workspace::make_extension_id("poc.gui.debug");
 
     auto id() const -> id_type override;
 

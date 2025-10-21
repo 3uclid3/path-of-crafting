@@ -1,5 +1,6 @@
 
 
+#include "poc.workspace/extension.hpp"
 #include <doctest/doctest.h>
 
 #include <poc.workspace/host.hpp>
@@ -56,13 +57,13 @@ private:
 class extension_one_fake : public extension_base_fake<extension_one_fake>
 {
 public:
-    static constexpr id_type static_id = "one_fake";
+    static constexpr id_type static_id = make_extension_id("one_fake");
 };
 
 class extension_two_fake : public extension_base_fake<extension_two_fake>
 {
 public:
-    static constexpr id_type static_id = "two_fake";
+    static constexpr id_type static_id = make_extension_id("two_fake");
 };
 
 TEST_CASE("host::add_extension")

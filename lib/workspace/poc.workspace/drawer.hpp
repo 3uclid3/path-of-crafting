@@ -4,6 +4,7 @@
 #include <functional>
 
 #include <poc.core/types.hpp>
+#include <poc.core/utility/crc32.hpp>
 #include <poc.core/utility/tagged.hpp>
 
 namespace poc::workspace {
@@ -22,7 +23,9 @@ using drawing_phases = std::array<T, magic_enum::enum_count<drawing_phase>()>;
 
 using draw_priority = tagged<i8, struct draw_priority_tag>;
 
-using drawer_id = string_view;
+using drawer_id = tagged<u32, struct drawer_id_tag>;
 using drawer = std::function<void(draw_context&)>;
+
+consteval drawer_id make_drawer_id(string_view str) { return drawer_id{compile_crc32(str)}; }
 
 } // namespace poc::workspace

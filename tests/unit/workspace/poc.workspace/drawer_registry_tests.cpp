@@ -28,68 +28,86 @@ struct fixture
 
 TEST_CASE_FIXTURE(fixture, "drawer_registry: draw_all respects phase ordering")
 {
-    REQUIRE(add_drawer("background", drawing_phase::background));
-    REQUIRE(add_drawer("main", drawing_phase::main));
-    REQUIRE(add_drawer("overlay", drawing_phase::overlay));
+    constexpr auto background_id = make_drawer_id("background");
+    constexpr auto main_id = make_drawer_id("main");
+    constexpr auto overlay_id = make_drawer_id("overlay");
+
+    REQUIRE(add_drawer(background_id, drawing_phase::background));
+    REQUIRE(add_drawer(main_id, drawing_phase::main));
+    REQUIRE(add_drawer(overlay_id, drawing_phase::overlay));
 
     registry.draw_all(ctx);
 
-    CHECK_EQ(calls, std::vector<drawer_id>{"background", "main", "overlay"});
+    CHECK_EQ(calls, std::vector<drawer_id>{background_id, main_id, overlay_id});
 }
 
 TEST_CASE_FIXTURE(fixture, "drawer_registry: add enforces unique ids across phases")
 {
-    REQUIRE(add_drawer("unique", drawing_phase::background));
+    constexpr auto unique_id = make_drawer_id("unique");
 
-    CHECK_FALSE(add_drawer("unique", drawing_phase::background));
-    CHECK_FALSE(add_drawer("unique", drawing_phase::overlay));
+    REQUIRE(add_drawer(unique_id, drawing_phase::background));
+
+    CHECK_FALSE(add_drawer(unique_id, drawing_phase::background));
+    CHECK_FALSE(add_drawer(unique_id, drawing_phase::overlay));
 
     registry.draw_all(ctx);
 
-    CHECK_EQ(calls, std::vector<drawer_id>{"unique"});
+    CHECK_EQ(calls, std::vector<drawer_id>{unique_id});
 }
 
 TEST_CASE_FIXTURE(fixture, "drawer_registry: add sorts drawers by priority")
 {
-    REQUIRE(add_drawer("high", drawing_phase::main, draw_priority{10}));
-    REQUIRE(add_drawer("low", drawing_phase::main, draw_priority{-5}));
-    REQUIRE(add_drawer("mid", drawing_phase::main, draw_priority{0}));
+    constexpr auto high_id = make_drawer_id("high");
+    constexpr auto mid_id = make_drawer_id("mid");
+    constexpr auto low_id = make_drawer_id("low");
+
+    REQUIRE(add_drawer(high_id, drawing_phase::main, draw_priority{10}));
+    REQUIRE(add_drawer(low_id, drawing_phase::main, draw_priority{-5}));
+    REQUIRE(add_drawer(mid_id, drawing_phase::main, draw_priority{0}));
 
     registry.draw_all(ctx);
 
-    CHECK_EQ(calls, std::vector<drawer_id>{"low", "mid", "high"});
+    CHECK_EQ(calls, std::vector<drawer_id>{low_id, mid_id, high_id});
 }
 
 TEST_CASE_FIXTURE(fixture, "drawer_registry: add updates indices after priority insertion")
 {
-    REQUIRE(add_drawer("low", drawing_phase::main, draw_priority{-5}));
-    REQUIRE(add_drawer("high", drawing_phase::main, draw_priority{5}));
-    REQUIRE(add_drawer("mid", drawing_phase::main, draw_priority{0}));
+    constexpr auto high_id = make_drawer_id("high");
+    constexpr auto mid_id = make_drawer_id("mid");
+    constexpr auto low_id = make_drawer_id("low");
 
-    CHECK(registry.remove("high"));
+    REQUIRE(add_drawer(low_id, drawing_phase::main, draw_priority{-5}));
+    REQUIRE(add_drawer(high_id, drawing_phase::main, draw_priority{5}));
+    REQUIRE(add_drawer(mid_id, drawing_phase::main, draw_priority{0}));
+
+    CHECK(registry.remove(high_id));
 
     registry.draw_all(ctx);
 
-    CHECK_EQ(calls, std::vector<drawer_id>{"low", "mid"});
+    CHECK_EQ(calls, std::vector<drawer_id>{low_id, mid_id});
 }
 
 TEST_CASE_FIXTURE(fixture, "drawer_registry: remove updates indices and allows reinsertion")
 {
-    REQUIRE(add_drawer("low", drawing_phase::main, draw_priority{-5}));
-    REQUIRE(add_drawer("mid", drawing_phase::main, draw_priority{0}));
-    REQUIRE(add_drawer("high", drawing_phase::main, draw_priority{5}));
+    constexpr auto high_id = make_drawer_id("high");
+    constexpr auto mid_id = make_drawer_id("mid");
+    constexpr auto low_id = make_drawer_id("low");
 
-    CHECK(registry.remove("mid"));
-    CHECK_FALSE(registry.remove("mid"));
+    REQUIRE(add_drawer(low_id, drawing_phase::main, draw_priority{-5}));
+    REQUIRE(add_drawer(mid_id, drawing_phase::main, draw_priority{0}));
+    REQUIRE(add_drawer(high_id, drawing_phase::main, draw_priority{5}));
+
+    CHECK(registry.remove(mid_id));
+    CHECK_FALSE(registry.remove(mid_id));
 
     registry.draw_all(ctx);
-    CHECK_EQ(calls, std::vector<drawer_id>{"low", "high"});
+    CHECK_EQ(calls, std::vector<drawer_id>{low_id, high_id});
 
     calls.clear();
-    REQUIRE(add_drawer("mid", drawing_phase::main, draw_priority{10}));
+    REQUIRE(add_drawer(mid_id, drawing_phase::main, draw_priority{10}));
 
     registry.draw_all(ctx);
-    CHECK_EQ(calls, std::vector<drawer_id>{"low", "high", "mid"});
+    CHECK_EQ(calls, std::vector<drawer_id>{low_id, high_id, mid_id});
 }
 
 }} // namespace poc::workspace

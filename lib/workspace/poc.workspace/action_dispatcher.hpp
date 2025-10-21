@@ -7,6 +7,7 @@
 #include <poc.core/algorithm.hpp>
 #include <poc.core/assert.hpp>
 #include <poc.core/types.hpp>
+#include <poc.core/utility/always_false.hpp>
 #include <poc.workspace/action.hpp>
 
 namespace poc::workspace {
@@ -100,7 +101,7 @@ auto action_dispatcher::enqueue(Args&&... args) -> void
     }
     else
     {
-        static_assert(false, "Unhandled action coalesce policy");
+        static_assert(always_false_v<Action>, "Unhandled action coalesce policy");
     }
 }
 

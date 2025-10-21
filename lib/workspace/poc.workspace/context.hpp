@@ -35,4 +35,9 @@ class draw_context
 public:
 };
 
+class action_context
+{
+public:
+};
+
 } // namespace poc::workspace

@@ -5,6 +5,7 @@
 #include <utility>
 
 #include <poc.core/def.hpp>
+#include <poc.core/types.hpp>
 
 namespace poc {
 
@@ -70,6 +71,15 @@ constexpr auto tagged<T, Tag>::underlying() noexcept -> T&
 }
 
 } // namespace poc
+
+template<typename T, typename Tag>
+struct std::formatter<poc::tagged<T, Tag>> : std::formatter<typename poc::tagged<T, Tag>::value_type>
+{
+    constexpr auto format(const poc::tagged<T, Tag>& tagged, std::format_context& ctx) const
+    {
+        return std::formatter<typename poc::tagged<T, Tag>::value_type>::format(tagged.underlying(), ctx);
+    }
+};
 
 template<typename T, typename Tag>
 struct std::hash<poc::tagged<T, Tag>>

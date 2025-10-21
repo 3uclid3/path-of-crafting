@@ -1,6 +1,7 @@
 #include <poc.gui.debug/extension.hpp>
 
 #include <poc.gui/debug.hpp>
+#include <poc.workspace/drawer.hpp>
 
 namespace poc::gui::debug {
 
@@ -11,7 +12,7 @@ auto extension::id() const -> id_type
 
 auto extension::init(init_context& context) -> init_result
 {
-    if (!context.add_drawer(static_id, [](auto&) { draw_demo_window(); }))
+    if (!context.add_drawer(workspace::make_drawer_id("demo"), [](auto&) { draw_demo_window(); }))
     {
         return init_result::failure;
     }

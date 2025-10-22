@@ -5,9 +5,24 @@
 
 #include <poc.core/signal.hpp>
 #include <poc.core/utility/tagged.hpp>
+#include <poc.workspace/action.hpp>
 #include <poc.workspace/item_id.hpp>
 
 namespace poc::workspace {
+
+struct select_item_action
+{
+    static constexpr action_id id{make_action_id("poc.workspace.select_item")};
+
+    item_id item;
+};
+
+struct deselect_item_action
+{
+    static constexpr action_id id{make_action_id("poc.workspace.deselect_item")};
+
+    item_id item;
+};
 
 using selected = tagged<bool, struct selected_tag>;
 

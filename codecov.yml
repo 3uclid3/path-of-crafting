@@ -41,6 +41,8 @@ component_management:
 
 ignore:
   - "extensions/gui.debug/**"
+  - "extensions/history/**"
+  - "extensions/item_detail/**"
   - "lib/app/**"
   - "lib/gui/**"
   - "lib/gui.backend/**"

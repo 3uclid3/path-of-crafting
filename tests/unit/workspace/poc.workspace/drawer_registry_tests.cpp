@@ -4,7 +4,10 @@
 
 #include <vector>
 
+#include <poc.workspace/action.hpp>
 #include <poc.workspace/context.hpp>
+#include <poc.workspace/item_repository.hpp>
+#include <poc.workspace/selection.hpp>
 
 namespace poc::workspace { namespace {
 
@@ -20,7 +23,11 @@ struct fixture
         return registry.add(id, make_drawer(id), phase, priority);
     }
 
-    draw_context ctx;
+    item_repository items;
+    selection selection;
+    action_dispatcher action_dispatcher;
+
+    draw_context ctx{items, selection, action_dispatcher};
     drawer_registry registry;
 
     std::vector<drawer_id> calls;

@@ -7,7 +7,7 @@ any_signal_connection::any_signal_connection(any_signal_connection&& other) noex
 {
     if (_vtable != nullptr)
     {
-        _vtable->move(_storage.data(), &other._storage);
+        _vtable->move(_storage.data(), other._storage.data());
 
         other._vtable->destroy(other._storage.data());
         other._vtable = nullptr;

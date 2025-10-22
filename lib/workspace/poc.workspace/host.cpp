@@ -9,7 +9,15 @@ namespace poc::workspace {
 
 auto host::init() -> bool
 {
-    init_context context{_drawers};
+    _action_dispatcher.register_handler<select_item_action>([this](action_context&, const auto& action) {
+        _selection.select(action.item);
+    });
+
+    _action_dispatcher.register_handler<deselect_item_action>([this](action_context&, const auto& action) {
+        _selection.deselect(action.item);
+    });
+
+    init_context context{_store.items(), _selection, _drawers};
 
     for (auto* ext : _extensions)
     {
@@ -33,12 +41,13 @@ auto host::uninit() -> void
 auto host::update() -> void
 {
     drain_items();
+    dispatch_actions();
     update_extensions();
 }
 
 auto host::draw() -> void
 {
-    draw_context context;
+    draw_context context{_store.items(), _selection, _action_dispatcher};
     _drawers.draw_all(context);
 }
 
@@ -101,9 +110,15 @@ auto host::drain_items() -> void
     _sink_items.clear();
 }
 
+auto host::dispatch_actions() -> void
+{
+    action_context context{};
+    _action_dispatcher.dispatch(context);
+}
+
 auto host::update_extensions() -> void
 {
-    update_context context{_drawers};
+    update_context context{_store.items(), _drawers};
     for (auto* ext : _extensions)
     {
         ext->update(context);

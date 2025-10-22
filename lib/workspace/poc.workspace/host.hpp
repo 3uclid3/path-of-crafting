@@ -7,6 +7,7 @@
 #include <poc.core/assert.hpp>
 #include <poc.core/types.hpp>
 #include <poc.item/item.hpp>
+#include <poc.workspace/action.hpp>
 #include <poc.workspace/drawer_registry.hpp>
 #include <poc.workspace/extension.hpp>
 #include <poc.workspace/ingester.hpp>
@@ -18,10 +19,11 @@ namespace poc::workspace {
 class host
 {
 public:
+    using action_dispatcher_type = action_dispatcher;
     using ingester_type = ingester;
     using store_type = store;
     using selection_type = selection;
-    using drawer_registry_type = drawer_registry;
+    using drawers_type = drawer_registry;
 
     auto init() -> bool;
     auto uninit() -> void;
@@ -54,16 +56,19 @@ public:
     auto find_extension() -> T*;
     auto find_extension(extension_id id) -> extension*;
 
-    auto ingester() noexcept -> ingester_type&;
     auto store() noexcept -> store_type&;
+    auto ingester() noexcept -> ingester_type&;
+    auto selection() noexcept -> selection_type&;
+    auto drawers() noexcept -> drawers_type&;
 
 private:
     using sink_items = std::vector<item>;
     using extensions = std::vector<extension*>;
     using extension_by_ids = std::unordered_map<extension_id, std::unique_ptr<extension>>;
 
-    auto update_extensions() -> void;
     auto drain_items() -> void;
+    auto dispatch_actions() -> void;
+    auto update_extensions() -> void;
 
     extensions _extensions;
     extension_by_ids _extension_by_ids;
@@ -71,7 +76,9 @@ private:
     store_type _store;
     ingester_type _ingester;
     selection_type _selection;
-    drawer_registry _drawers;
+    drawers_type _drawers;
+
+    action_dispatcher_type _action_dispatcher;
 
     sink_items _sink_items;
 };
@@ -111,14 +118,24 @@ auto host::find_extension() -> T*
     return static_cast<T*>(find_extension(T::static_id));
 }
 
+inline auto host::store() noexcept -> store_type&
+{
+    return _store;
+}
+
 inline auto host::ingester() noexcept -> ingester_type&
 {
     return _ingester;
 }
 
-inline auto host::store() noexcept -> store_type&
+inline auto host::selection() noexcept -> selection_type&
 {
-    return _store;
+    return _selection;
+}
+
+inline auto host::drawers() noexcept -> drawers_type&
+{
+    return _drawers;
 }
 
 } // namespace poc::workspace

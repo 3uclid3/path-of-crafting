@@ -6,6 +6,8 @@ target("poc")
         "poc.app",
 
         -- Extensions
+        "poc.history",
+        "poc.item_detail",
 
         -- Debug Extensions
         "poc.gui.debug"

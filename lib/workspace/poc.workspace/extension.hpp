@@ -1,5 +1,8 @@
 #pragma once
 
+#include <vector>
+
+#include <poc.core/signal.hpp>
 #include <poc.core/types.hpp>
 #include <poc.core/utility/crc32.hpp>
 #include <poc.core/utility/tagged.hpp>
@@ -36,6 +39,19 @@ public:
 
     virtual auto init(init_context& context) -> init_result = 0;
     virtual auto update(update_context& context) -> void = 0;
+
+protected:
+    template<typename Signal>
+    auto track(basic_signal_connection<Signal>&& connection);
+
+private:
+    std::vector<any_signal_connection> _connections;
 };
+
+template<typename Signal>
+auto extension::track(basic_signal_connection<Signal>&& connection)
+{
+    _connections.emplace_back(std::move(connection));
+}
 
 } // namespace poc::workspace

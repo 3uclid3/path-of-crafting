@@ -5,6 +5,7 @@
 #include <cstddef>
 #include <functional>
 #include <memory>
+#include <new>
 #include <type_traits>
 #include <utility>
 
@@ -31,6 +32,8 @@ class basic_signal_connector;
 
 template<typename Signal>
 class basic_signal_scoped_block;
+
+class any_signal_connection;
 
 template<typename... Args>
 using signal = basic_inplace_signal<0, std::allocator<std::byte>, Args...>;
@@ -275,6 +278,47 @@ private:
     friend signal_type;
 };
 
+class any_signal_connection
+{
+public:
+    any_signal_connection() noexcept = default;
+
+    template<typename Signal>
+    any_signal_connection(basic_signal_connection<Signal>&& signal_connection) noexcept;
+
+    any_signal_connection(const any_signal_connection&) = delete;
+    auto operator=(const any_signal_connection&) -> any_signal_connection& = delete;
+
+    any_signal_connection(any_signal_connection&& other) noexcept;
+    auto operator=(any_signal_connection&& other) noexcept -> any_signal_connection&;
+
+    ~any_signal_connection();
+
+private:
+    using storage_type = std::array<std::byte, sizeof(void*) + sizeof(std::size_t)>; // pointer + index
+
+    struct vtable
+    {
+        using destroy_type = void (*)(void*);
+        using move_type = void (*)(void*, void*);
+
+        destroy_type destroy{nullptr};
+        move_type move{nullptr};
+    };
+
+    template<typename Signal>
+    static auto destroy(void* storage) -> void;
+
+    template<typename Signal>
+    static auto move(void* dst, void* src) -> void;
+
+    template<typename Signal>
+    static auto vtable_for() -> const vtable*;
+
+    const vtable* _vtable{nullptr};
+    alignas(std::max_align_t) storage_type _storage;
+};
+
 template<typename T, std::size_t Size>
 constexpr auto basic_inplace_signal_buffer<T, Size>::data() const noexcept -> const T*
 {
@@ -385,9 +429,7 @@ auto basic_signal_connector<basic_inplace_signal<InplaceSize, Allocator, Args...
 {
     POC_ASSERT(obj != nullptr);
 
-    return connect([obj, mf](Args... call_args) {
-        std::invoke(mf, obj, call_args...);
-    });
+    return connect(*obj, mf);
 }
 
 template<std::size_t InplaceSize, typename Allocator, typename... Args>
@@ -396,9 +438,7 @@ auto basic_signal_connector<basic_inplace_signal<InplaceSize, Allocator, Args...
 {
     POC_ASSERT(obj != nullptr);
 
-    return connect([obj, mf](Args... call_args) {
-        std::invoke(mf, obj, call_args...);
-    });
+    return connect(*obj, mf);
 }
 
 template<std::size_t InplaceSize, typename Allocator, typename... Args>
@@ -640,7 +680,7 @@ template<std::size_t InplaceSize, typename Allocator, typename... Args>
 template<typename Fn>
 auto basic_inplace_signal<InplaceSize, Allocator, Args...>::slot_destroy(void* storage) -> void
 {
-    std::destroy_at(reinterpret_cast<Fn*>(storage));
+    std::destroy_at(std::launder(reinterpret_cast<Fn*>(storage)));
 }
 
 template<std::size_t InplaceSize, typename Allocator, typename... Args>
@@ -870,6 +910,42 @@ auto basic_inplace_signal<InplaceSize, Allocator, Args...>::move_from(basic_inpl
     _connected_size = std::exchange(other._connected_size, 0);
     _heap_capacity = std::exchange(other._heap_capacity, 0);
     _block_count = std::exchange(other._block_count, 0);
+}
+
+template<typename Signal>
+any_signal_connection::any_signal_connection(basic_signal_connection<Signal>&& signal_connection) noexcept
+{
+    using connection_type = basic_signal_connection<Signal>;
+
+    static_assert(alignof(connection_type) <= alignof(std::max_align_t));
+    static_assert(sizeof(connection_type) <= sizeof(storage_type));
+
+    _vtable = vtable_for<Signal>();
+    new (_storage.data()) basic_signal_connection<Signal>(std::move(signal_connection));
+}
+
+template<typename Signal>
+auto any_signal_connection::destroy(void* storage) -> void
+{
+    using connection_type = basic_signal_connection<Signal>;
+
+    std::destroy_at(std::launder(reinterpret_cast<connection_type*>(storage)));
+}
+
+template<typename Signal>
+auto any_signal_connection::move(void* dst, void* src) -> void
+{
+    using connection_type = basic_signal_connection<Signal>;
+
+    auto* src_connection = reinterpret_cast<connection_type*>(src);
+    new (dst) connection_type(std::move(*src_connection));
+}
+
+template<typename Signal>
+auto any_signal_connection::vtable_for() -> const vtable*
+{
+    static const vtable table{&destroy<Signal>, &move<Signal>};
+    return &table;
 }
 
 } // namespace poc

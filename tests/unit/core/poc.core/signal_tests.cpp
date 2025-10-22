@@ -393,4 +393,78 @@ TEST_CASE("basic_inplace_signal: move assignment transfers empty state")
     CHECK(source.empty());
 }
 
+TEST_CASE("any_signal_connection: destruction disconnects underlying slot")
+{
+    inplace_signal<1, int> signal;
+    int observed = 0;
+
+    CHECK(signal.empty());
+
+    {
+        auto base_connection = signal.connector().connect([&](int value) { observed = value; });
+        any_signal_connection erased{std::move(base_connection)};
+
+        CHECK_EQ(signal.size(), 1);
+        CHECK_FALSE(base_connection.is_connected());
+
+        signal.emit(9);
+        CHECK_EQ(observed, 9);
+    }
+
+    CHECK(signal.empty());
+    signal.emit(5);
+    CHECK_EQ(observed, 9);
+}
+
+TEST_CASE("any_signal_connection: move constructor transfers ownership")
+{
+    inplace_signal<1, int> signal;
+    int tally = 0;
+
+    {
+        auto base_connection = signal.connector().connect([&](int value) { tally += value; });
+        any_signal_connection first{std::move(base_connection)};
+        any_signal_connection second{std::move(first)};
+
+        CHECK_EQ(signal.size(), 1);
+
+        signal.emit(4);
+        CHECK_EQ(tally, 4);
+    }
+
+    CHECK(signal.empty());
+    signal.emit(2);
+    CHECK_EQ(tally, 4);
+}
+
+TEST_CASE("any_signal_connection: move assignment replaces existing connection")
+{
+    inplace_signal<2, int> signal;
+    int first_sum = 0;
+    int second_sum = 0;
+
+    auto first_connection = signal.connector().connect([&](int value) { first_sum += value; });
+    any_signal_connection erased{std::move(first_connection)};
+
+    CHECK_EQ(signal.size(), 1);
+
+    {
+        any_signal_connection replacement{signal.connector().connect([&](int value) { second_sum += value; })};
+
+        erased = std::move(replacement);
+
+        CHECK_EQ(signal.size(), 1);
+
+        signal.emit(7);
+        CHECK_EQ(first_sum, 0);
+        CHECK_EQ(second_sum, 7);
+    }
+
+    CHECK_EQ(signal.size(), 1);
+
+    signal.emit(3);
+    CHECK_EQ(first_sum, 0);
+    CHECK_EQ(second_sum, 10);
+}
+
 }} // namespace poc

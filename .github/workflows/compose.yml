@@ -1,0 +1,43 @@
+---
+name: Compose
+
+on:
+  push:
+    branches: [main]
+
+permissions:
+  contents: write
+  workflows: write
+
+jobs:
+  compose:
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        type: [app, headeronly, static]
+
+    steps:
+      - uses: actions/checkout@v6
+
+      - name: Configure git
+        run: |
+          git config user.name  "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+
+      - name: Compose
+        run: python compose.py --dry-run --type ${{ matrix.type }} --name xct
+
+      - name: Push orphan branch
+        run: |
+          BRANCH="template/${{ matrix.type }}"
+          SHA=$(git rev-parse --short HEAD)
+
+          git checkout --orphan $BRANCH
+          git rm -rf .
+
+          cp -r build/xct/. .
+          rm -rf build/ template/ compose.py
+
+          git add -A
+          git commit -m "compose: ${{ matrix.type }} @ $SHA"
+          git push origin $BRANCH --force

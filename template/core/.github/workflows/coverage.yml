@@ -1,0 +1,116 @@
+name: Coverage
+
+on:
+  pull_request:
+    branches: ["main"]
+  push:
+    paths-ignore:
+      - ".github/workflows/build-images.yml"
+      - ".github/workflows/build-test.yml"
+      - ".github/workflows/codeql.yml"
+      - ".github/workflows/nightly.yml"
+      - ".github/workflows/sanitizers.yml"
+      - ".github/dependabot.yml"
+      - ".gitignore"
+      - "docs/**"
+      - "AGENTS.md"
+      - "CHANGELOG.md"
+      - "Dockerfile"
+      - "LICENSE"
+      - "README.md"
+
+concurrency:
+  group: ci-${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  linux-coverage:
+    runs-on: ubuntu-24.04
+    permissions:
+      actions: write
+      contents: read
+      packages: read
+    container:
+      image: ghcr.io/${{ github.repository }}-ubuntu-ci:latest
+      credentials:
+        username: ${{ github.actor }}
+        password: ${{ secrets.GITHUB_TOKEN }}
+
+    if: ${{ !contains(github.event.head_commit.message, 'coverage skip') }}
+    steps:
+      - name: Get current date as package key
+        id: cache_key
+        shell: bash
+        run: echo "key=$(date +'%V')" >> $GITHUB_OUTPUT
+
+      - name: Checkout
+        uses: actions/checkout@v6
+
+      # Force xmake to a specific folder (for cache)
+      - name: Set xmake env
+        run: echo "XMAKE_GLOBALDIR=${{ runner.workspace }}/xmake-global" >> $GITHUB_ENV
+        shell: bash
+
+      # Update xmake repository (in order to have the file that will be cached)
+      - name: Update xmake repository
+        run: xmake repo --update
+
+      # Fetch xmake dependency_hash
+      - name: Retrieve dependencies hash
+        id: dependency_hash
+        run: echo "hash=$(xmake l utils.ci.packageskey)" >> $GITHUB_OUTPUT
+        shell: bash
+
+      # Cache xmake dependencies
+      - name: Restore cached xmake dependencies
+        id: restore-depcache
+        uses: actions/cache/restore@v5
+        with:
+          path: ${{ env.XMAKE_GLOBALDIR }}/.xmake/packages
+          key: linux-coverage-${{ steps.dependency_hash.outputs.hash }}-W${{ steps.cache_key.outputs.key }}
+          restore-keys: |
+            linux-coverage-${{ steps.dependency_hash.outputs.hash }}-
+
+      # Configure build
+      - name: Configure
+        run: xmake f -m coverage --toolchain=llvm --junit_reports=y -y
+
+      # Save dependencies
+      - name: Save cached xmake dependencies
+        if: ${{ !steps.restore-depcache.outputs.cache-hit }}
+        uses: actions/cache/save@v5
+        with:
+          path: ${{ env.XMAKE_GLOBALDIR }}/.xmake/packages
+          key: ${{ steps.restore-depcache.outputs.cache-primary-key }}
+
+      - name: Run unit tests
+        run: xmake test -g unit
+
+      - name: Upload test results to Codecov
+        if: always()
+        uses: codecov/test-results-action@v1
+        with:
+          files: build/**.junit.xml
+          flags: unit-tests-linux-coverage
+          fail_ci_if_error: false
+          token: ${{ secrets.CODECOV_TOKEN }}
+
+      - name: Generate coverage report
+        run: |
+          gcovr \
+            --root "$GITHUB_WORKSPACE" \
+            --filter "$GITHUB_WORKSPACE/core/include" \
+            --filter "$GITHUB_WORKSPACE/core/src" \
+            --gcov-executable "llvm-cov gcov" \
+            --object-directory "build/.objs" \
+            --xml --xml-pretty \
+            -o "build/coverage.xml"
+
+      - name: Upload coverage to Codecov
+        uses: codecov/codecov-action@v5
+        with:
+          token: ${{ secrets.CODECOV_TOKEN }}
+          fail_ci_if_error: true
+          disable_search: true
+          plugins: noop
+          files: build/coverage.xml

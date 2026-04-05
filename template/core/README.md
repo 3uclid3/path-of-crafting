@@ -1,0 +1,2 @@
+# xct
+xmake c++ template

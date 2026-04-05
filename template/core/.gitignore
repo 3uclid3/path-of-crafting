@@ -1,0 +1,20 @@
+# IDE
+.idea/*
+.vs/*
+.vscode/*
+
+# AI
+.claude/*
+
+# clandg
+.cache/*
+
+# xmake
+.xmake
+
+# xmake build
+build/*
+
+# xmake VS projects
+vsxmake2022/*
+vsxmake2026/*

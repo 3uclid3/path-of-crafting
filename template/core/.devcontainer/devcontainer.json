@@ -1,0 +1,16 @@
+{
+  "name": "tpl",
+  "image": "ghcr.io/3uclid3/tpl-cpp-ubuntu-dev:latest",
+  "customizations": {
+    "vscode": {
+      "extensions": [
+        "DavidAnson.vscode-markdownlint",
+        "eamodio.gitlens",
+        "github.vscode-github-actions",
+        "redhat.vscode-yaml",
+        "tboox.xmake-vscode",
+        "vadimcn.vscode-lldb"
+      ]
+    }
+  }
+}

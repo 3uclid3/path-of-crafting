@@ -1,0 +1,19 @@
+set_project("Path of Crafting")
+set_version("0.1.0")
+set_license("GPL-3.0-or-later")
+
+set_languages("cxx23")
+set_exceptions("no-cxx")
+set_warnings("allextra", "error")
+
+add_rules("mode.debug", "mode.release", "mode.coverage")
+add_rules("plugin.compile_commands.autoupdate", { outputdir = get_config("builddir") })
+
+add_requires("doctest")
+
+option("junit_reports")
+    set_default(false)
+    set_showmenu(true)
+    set_description("Enable JUnit XML report generation for tests")
+   
+includes("app", "lib", "tests")

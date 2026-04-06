@@ -4,14 +4,28 @@
 
 namespace poc {
 
-auto item::is_magic_blob(std::string_view blob) noexcept -> bool
+namespace detail {
+
+auto is_blob_with_rarity(std::string_view blob, std::string_view rarity_kv) noexcept -> bool
 {
-    return blob.starts_with("Item Class:") && blob.contains("Rarity: Magic");
+    return blob.starts_with("Item Class:") && blob.contains(rarity_kv);
 }
 
-auto item::parse_magic_name(std::string_view blob) noexcept -> std::string_view
+} // namespace detail
+
+auto item::is_blob(std::string_view blob) noexcept -> bool
 {
-    assert(is_magic_blob(blob) && "blob must be a magic item");
+    return detail::is_blob_with_rarity(blob, "Rarity:");
+}
+
+auto item::is_magic_blob(std::string_view blob) noexcept -> bool
+{
+    return detail::is_blob_with_rarity(blob, "Rarity: Magic");
+}
+
+auto item::parse_name(std::string_view blob) noexcept -> std::string_view
+{
+    assert(is_blob(blob) && "blob must be an item");
 
     const std::size_t rarity_line_index = blob.find("Rarity:");
     const std::size_t name_index = blob.find('\n', rarity_line_index) + 1; // Position after the rarity line

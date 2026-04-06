@@ -4,7 +4,6 @@
 #include <iostream>
 #include <string>
 #include <thread>
-#include <vector>
 
 #include <argparse/argparse.hpp>
 
@@ -21,46 +20,33 @@ public:
 
     inline static const auto save_interval = std::chrono::minutes(5);
 
-    struct recorded_item
-    {
-        explicit recorded_item(std::string&& blob)
-            : timestamp(clock::now())
-            , blob(std::move(blob))
-        {
-        }
-
-        clock::time_point timestamp;
-        std::string blob;
-    };
-
 public:
     recorder(std::string&& output_file, bool verbose)
         : _output_file(std::move(output_file))
         , _stream(_output_file, std::ios::binary)
         , _verbose(verbose)
     {
-        _items.reserve(1024);
-
         _stream << _session_start_time << "\n\n";
+
+        platform::set_console_control_handler([this] { on_exit(); });
+        clipboard::set_changed_callback([this](std::string_view blob) { on_clipboard_changed(blob); });
     }
 
     auto run() -> void
     {
         std::cout << "[*] Recorder started. Output file: " << _output_file << "\n";
 
-        platform::set_console_control_handler([this] { save_session(clock::now()); _running = false; });
-
-        clipboard::set_changed_callback([this](std::string_view blob) { on_clipboard_changed(blob); });
-
         while (_running)
         {
-            clock::time_point now = clock::now();
-
             platform::poll_events();
 
-            if (should_save_session(now))
+            clock::time_point now = clock::now();
+            clock::duration elapsed = now - _last_flush_time;
+
+            if (elapsed >= save_interval)
             {
-                save_session(now);
+                _stream.flush();
+                _last_flush_time = now;
             }
 
             std::this_thread::sleep_for(std::chrono::milliseconds(16));
@@ -68,26 +54,11 @@ public:
     }
 
 private:
-    auto should_save_session(clock::time_point now) const noexcept -> bool
+    auto on_exit() -> void
     {
-        return now - _last_save_time >= save_interval;
-    }
-
-    auto save_session(clock::time_point now) -> void
-    {
-        if (_verbose)
-        {
-            std::cout << "[*] Saving session... (" << _items.size() << " items)\n";
-        }
-
-        for (const auto& item : _items)
-        {
-            _stream << "=== " << item.timestamp << "\n";
-            _stream << item.blob << "\n";
-        }
-
-        _items.clear();
-        _last_save_time = now;
+        _stream.flush();
+        _last_flush_time = clock::now();
+        _running = false;
     }
 
     auto on_clipboard_changed(std::string_view blob) -> void
@@ -99,17 +70,17 @@ private:
                 std::cout << "[*] Magic item: " << item::parse_magic_name(blob) << "\n";
             }
 
-            _items.emplace_back(std::string(blob));
+            _stream << "=== " << clock::now() << "\n";
+            _stream << blob << "\n";
         }
     }
 
 private:
     clock::time_point _session_start_time{clock::now()};
-    clock::time_point _last_save_time{_session_start_time};
+    clock::time_point _last_flush_time{_session_start_time};
 
     std::string _output_file;
     std::ofstream _stream;
-    std::vector<recorded_item> _items;
 
     bool _verbose{false};
     bool _running{true};

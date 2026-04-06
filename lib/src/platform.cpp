@@ -11,8 +11,7 @@ static control_handler g_control_handler;
 
 auto control_handler_hook([[maybe_unused]] DWORD ctrl_type) -> BOOL
 {
-    g_control_handler();
-    return FALSE;
+    return g_control_handler();
 }
 
 } // namespace console

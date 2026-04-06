@@ -1,9 +1,12 @@
 #include <chrono>
+#include <format>
 #include <fstream>
 #include <iostream>
 #include <string>
 #include <thread>
 #include <vector>
+
+#include <argparse/argparse.hpp>
 
 #include <poc/clipboard.hpp>
 #include <poc/item.hpp>
@@ -116,19 +119,21 @@ private:
 
 auto main(int argc, char* argv[]) -> int
 {
-    if (argc < 2)
-    {
-        std::cerr << "[-] Usage: " << argv[0] << " <output_file> [-v]\n";
-        return 1;
-    }
+    argparse::ArgumentParser cli{"Path of Crafting - Recorder"};
 
-    bool verbose = false;
-    if (argc >= 3 && std::string_view(argv[2]) == "-v")
-    {
-        verbose = true;
-    }
+    cli.add_argument("-o", "--output")
+        .help("Path to the output file where recorded items will be saved.")
+        .default_value(std::format("{:%Y-%m-%dT%H-%M-%S}.pocr", poc::recorder::clock::now()))
+        .metavar("FILE");
 
-    poc::recorder recorder(argv[1], verbose);
+    cli.add_argument("-v", "--verbose")
+        .help("Enable verbose output.")
+        .default_value(false)
+        .implicit_value(true);
+
+    cli.parse_args(argc, argv);
+
+    poc::recorder recorder(cli.get("output"), cli.get<bool>("verbose"));
     recorder.run();
     return 0;
 }

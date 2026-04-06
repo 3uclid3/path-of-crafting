@@ -1,1 +1,1 @@
-includes("recorder")
+includes("alerter", "recorder")

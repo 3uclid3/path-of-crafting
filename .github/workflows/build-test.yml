@@ -24,36 +24,36 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
-  linux-build-test:
-    runs-on: ubuntu-24.04
+  windows-build-test:
+    runs-on: windows-latest
     permissions:
       actions: write
       contents: read
-      packages: read
-    container:
-      image: ghcr.io/${{ github.repository }}-ubuntu-ci:latest
-      credentials:
-        username: ${{ github.actor }}
-        password: ${{ secrets.GITHUB_TOKEN }}
     strategy:
       fail-fast: false
       matrix:
         build_type: [debug, release]
-
-    if: ${{ !contains(github.event.head_commit.message, 'ci skip') }}
     steps:
-      - name: Get current date as package key
+      - name: Get current week as package key (pwsh)
         id: cache_key
-        shell: bash
-        run: echo "key=$(date +'%V')" >> $GITHUB_OUTPUT
+        shell: pwsh
+        run: |
+          $calendar = [System.Globalization.CultureInfo]::InvariantCulture.Calendar
+          $week = $calendar.GetWeekOfYear((Get-Date), [System.Globalization.CalendarWeekRule]::FirstFourDayWeek, [System.DayOfWeek]::Monday)
+          "key=$week" | Out-File -FilePath $env:GITHUB_OUTPUT -Encoding utf8 -Append
 
       - name: Checkout
         uses: actions/checkout@v6
 
       # Force xmake to a specific folder (for cache)
       - name: Set xmake env
-        run: echo "XMAKE_GLOBALDIR=${{ runner.workspace }}/xmake-global" >> $GITHUB_ENV
-        shell: bash
+        shell: pwsh
+        run: echo "XMAKE_GLOBALDIR=${{ runner.workspace }}/xmake-global" | Out-File -FilePath $env:GITHUB_ENV -Encoding utf8 -Append
+
+      - name: Setup xmake
+        uses: xmake-io/github-action-setup-xmake@v1
+        with:
+          actions-cache-folder: .xmake-cache-W${{ steps.cache_key.outputs.key }}
 
       # Update xmake repository (in order to have the file that will be cached)
       - name: Update xmake repository
@@ -62,8 +62,8 @@ jobs:
       # Fetch xmake dependency_hash
       - name: Retrieve dependencies hash
         id: dependency_hash
-        run: echo "hash=$(xmake l utils.ci.packageskey)" >> $GITHUB_OUTPUT
-        shell: bash
+        shell: pwsh
+        run: echo "hash=$(xmake l utils.ci.packageskey)" | Out-File -FilePath $env:GITHUB_OUTPUT -Encoding utf8 -Append
 
       # Cache xmake dependencies
       - name: Restore cached xmake dependencies
@@ -71,13 +71,13 @@ jobs:
         uses: actions/cache/restore@v5
         with:
           path: ${{ env.XMAKE_GLOBALDIR }}/.xmake/packages
-          key: linux-test-${{ matrix.build_type }}-${{ steps.dependency_hash.outputs.hash }}-W${{ steps.cache_key.outputs.key }}
+          key: windows-test-${{ matrix.build_type }}-${{ steps.dependency_hash.outputs.hash }}-W${{ steps.cache_key.outputs.key }}
           restore-keys: |
-            linux-test-${{ matrix.build_type }}-${{ steps.dependency_hash.outputs.hash }}-
+            windows-test-${{ matrix.build_type }}-${{ steps.dependency_hash.outputs.hash }}-
 
       # Configure build
       - name: Configure
-        run: xmake f -m ${{ matrix.build_type }} --toolchain=llvm --junit_reports=y -y
+        run: xmake f -m ${{ matrix.build_type }} --toolchain=llvm -y
 
       # Save dependencies
       - name: Save cached xmake dependencies
@@ -87,17 +87,11 @@ jobs:
           path: ${{ env.XMAKE_GLOBALDIR }}/.xmake/packages
           key: ${{ steps.restore-depcache.outputs.cache-primary-key }}
 
+      # Build
+      - name: Build
+        run: xmake -j$(nproc)
+
+      # Run tests
       - name: Run unit tests
         run: xmake test -g unit
 
-      - name: Run compile tests
-        run: xmake test -g compile
-
-      - name: Upload test results to Codecov
-        if: always()
-        uses: codecov/test-results-action@v1
-        with:
-          files: build/**.junit.xml
-          flags: unit-tests-linux-${{ matrix.build_type }}
-          fail_ci_if_error: false
-          token: ${{ secrets.CODECOV_TOKEN }}

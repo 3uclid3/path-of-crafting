@@ -89,7 +89,7 @@ jobs:
 
       # Build
       - name: Build
-        run: xmake -j$(nproc)
+        run: xmake build
 
       # Run tests
       - name: Run unit tests

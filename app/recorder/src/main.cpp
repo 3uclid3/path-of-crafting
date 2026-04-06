@@ -102,6 +102,17 @@ private:
     {
         if (item::is_magic_blob(blob))
         {
+            if (_last_item_blob == blob)
+            {
+                if (_verbose)
+                {
+                    std::cout << "[*] Duplicate item: " << item::parse_name(blob) << " (ignored)\n";
+                }
+                return;
+            }
+
+            _last_item_blob = blob;
+
             if (_verbose)
             {
                 std::cout << "[*] Magic item: " << item::parse_name(blob) << "\n";
@@ -115,6 +126,8 @@ private:
 private:
     clock::time_point _session_start_time{clock::now()};
     clock::time_point _last_flush_time{_session_start_time};
+
+    std::string _last_item_blob;
 
     std::string _output_file;
     std::ofstream _stream;

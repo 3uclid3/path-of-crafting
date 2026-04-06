@@ -56,11 +56,6 @@ public:
     }
 
 private:
-    auto on_exit() -> void
-    {
-        _running.store(false);
-    }
-
     auto on_clipboard_changed(std::string_view blob) -> void
     {
         if (item::is_magic_blob(blob))

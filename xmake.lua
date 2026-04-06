@@ -9,7 +9,7 @@ set_warnings("allextra", "error")
 add_rules("mode.debug", "mode.release", "mode.coverage")
 add_rules("plugin.compile_commands.autoupdate", { outputdir = get_config("builddir") })
 
-add_requires("doctest")
+add_requires("argparse", "doctest")
 
 option("junit_reports")
     set_default(false)

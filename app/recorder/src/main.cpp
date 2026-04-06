@@ -28,7 +28,7 @@ public:
     {
         _stream << _session_start_time << "\n\n";
 
-        platform::set_console_control_handler([this] { on_exit(); });
+        platform::set_console_control_handler([this] { _running.store(false); return true; });
         clipboard::set_changed_callback([this](std::string_view blob) { on_clipboard_changed(blob); });
     }
 
@@ -36,7 +36,7 @@ public:
     {
         std::cout << "[*] Recorder started. Output file: " << _output_file << "\n";
 
-        while (_running)
+        while (_running.load())
         {
             platform::poll_events();
 
@@ -51,14 +51,14 @@ public:
 
             std::this_thread::sleep_for(std::chrono::milliseconds(16));
         }
+
+        _stream.flush();
     }
 
 private:
     auto on_exit() -> void
     {
-        _stream.flush();
-        _last_flush_time = clock::now();
-        _running = false;
+        _running.store(false);
     }
 
     auto on_clipboard_changed(std::string_view blob) -> void
@@ -83,7 +83,7 @@ private:
     std::ofstream _stream;
 
     bool _verbose{false};
-    bool _running{true};
+    std::atomic<bool> _running{true};
 };
 
 } // namespace poc
